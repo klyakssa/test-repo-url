@@ -28,8 +28,8 @@ func (c *CompressWriter) Header() http.Header {
 }
 
 func (c *CompressWriter) Write(b []byte) (int, error) {
-	if strings.Contains(c.Header().Get("Content-Type"), "application/json") || strings.Contains(c.Header().Get("Content-Type"), "text/html") {
-		c.Header().Set("Content-Encoding", "gzip")
+	if strings.Contains(c.w.Header().Get("Content-Type"), "application/json") || strings.Contains(c.w.Header().Get("Content-Type"), "text/html") {
+		c.w.Header().Set("Content-Encoding", "gzip")
 		return c.zw.Write(b)
 	}
 	return c.w.Write(b)
@@ -48,7 +48,7 @@ func (c *CompressWriter) CloseNotify() <-chan bool {
 }
 
 func (c *CompressWriter) Flush() {
-	c.w.Flush()
+	c.zw.Flush()
 }
 
 func (c *CompressWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
