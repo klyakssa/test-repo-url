@@ -25,13 +25,13 @@ func InitFlagConfig() *Config {
 	env.Parse(&cfg.WebConfig)
 	env.Parse(&cfg.File)
 	if cfg.WebConfig.HostPort == "" {
-		pflag.StringVar(&cfg.WebConfig.HostPort, "a", "localhost:8080", "server host")
+		pflag.StringVarP(&cfg.WebConfig.HostPort, "server", "a", "localhost:8080", "server host")
 	}
 	if cfg.WebConfig.BaseUrl == "" {
-		pflag.StringVar(&cfg.WebConfig.BaseUrl, "b", "http://localhost:8080", "base url")
+		pflag.StringVarP(&cfg.WebConfig.BaseUrl, "base", "b", "http://localhost:8080", "base url")
 	}
 	if cfg.File.Path == "" {
-		pflag.StringVar(&cfg.File.Path, "f", "./storage.json", "file storage path")
+		pflag.StringVarP(&cfg.File.Path, "file", "f", "./storage.json", "file storage path")
 	}
 
 	pflag.Parse()
