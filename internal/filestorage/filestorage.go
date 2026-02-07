@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/model"
+	"github.com/klyakssa/test-repo-url/internal/model"
 )
 
 type FileStorage struct {

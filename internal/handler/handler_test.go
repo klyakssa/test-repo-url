@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/config"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/handler"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/logger"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/model"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/service/fileservice"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/logger"
+	"github.com/klyakssa/test-repo-url/internal/model"
+	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
+	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

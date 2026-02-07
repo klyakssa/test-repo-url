@@ -1,9 +1,9 @@
 package fileservice
 
 import (
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/config"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/filestorage"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/repository"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/filestorage"
+	"github.com/klyakssa/test-repo-url/internal/repository"
 )
 
 type FileService struct {

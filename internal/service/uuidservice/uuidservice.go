@@ -1,8 +1,8 @@
 package uuidservice
 
 import (
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/repository"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/uuidstorage"
+	"github.com/klyakssa/test-repo-url/internal/repository"
+	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 )
 
 type UUIDService struct {

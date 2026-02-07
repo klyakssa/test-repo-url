@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/config"
 )
 
 type MyRouter struct {
