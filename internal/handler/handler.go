@@ -134,4 +134,6 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusCreated)
 	i, _ := w.Write(data)
 	w.Header().Set("Content-Length", strconv.Itoa(i))
+	h.Logger.Logger.Debug(i, " bytes written")
+	h.Logger.Logger.Debug(w.Header())
 }

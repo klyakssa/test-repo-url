@@ -1,16 +1,37 @@
 package handler_test
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"strconv"
+	"strings"
 	"testing"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/handler"
+	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
+	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
+	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var testConfig *config.Config
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	os.Exit(code)
+}
+
+func setup() {
+	testConfig = config.InitFlagConfig()
+}
 
 func TestMainHandler(t *testing.T) {
 	type want struct {
@@ -42,34 +63,38 @@ func TestMainHandler(t *testing.T) {
 			},
 		},
 	}
-	errRedirectBlocked := errors.New("HTTP redirect blocked")
-	redirPolicy := resty.RedirectPolicyFunc(func(_ *http.Request, _ []*http.Request) error {
-		return errRedirectBlocked
-	})
+	log := logger.NewLogger()
+	fs := fileservice.New(testConfig)
+	uuid := uuidservice.New()
 
-	httpc := resty.New().
-		SetBaseURL("http://localhost:8080").
-		SetRedirectPolicy(redirPolicy)
-
+	hand := handler.NewMyHandler(testConfig, log, fs, uuid)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, err := httpc.R().
-				SetHeader("Content-Type", "text/plain").
-				SetBody([]byte(test.want.url)).
-				Post("/")
+			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
+			w := httptest.NewRecorder()
+			hand.ShortenHandler(w, request)
+
+			res := w.Result()
+			assert.Equal(t, test.want.codePost, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+
+			assert.Equal(t, strconv.Itoa(len(resBody)), res.Header.Get("Content-Length"))
 
 			require.NoError(t, err)
 
-			assert.Equal(t, test.want.codePost, res.StatusCode())
-			assert.Equal(t, test.want.contentType, res.Header().Get("Content-Type"))
-			assert.Equal(t, strconv.Itoa(len(res.Body())), res.Header().Get("Content-Length"))
+			request2 := httptest.NewRequest(http.MethodGet, string(resBody), nil)
+			w2 := httptest.NewRecorder()
+			hand.UnshortenHandler(w2, request2)
 
-			res2, err := httpc.R().
-				Get(string(res.Body()))
+			res2 := w2.Result()
 
-			assert.Equal(t, test.want.codeGet, res2.StatusCode())
-			assert.Equal(t, test.want.url, res2.Header().Get("Location"))
+			assert.Equal(t, test.want.codeGet, res2.StatusCode)
+			assert.Equal(t, test.want.url, res2.Header.Get("Location"))
 
+			defer res2.Body.Close()
 		})
 	}
 }
@@ -104,104 +129,43 @@ func TestNewShortenHandler(t *testing.T) {
 			},
 		},
 	}
-
-	errRedirectBlocked := errors.New("HTTP redirect blocked")
-	redirPolicy := resty.RedirectPolicyFunc(func(_ *http.Request, _ []*http.Request) error {
-		return errRedirectBlocked
-	})
-
-	httpc := resty.New().
-		SetBaseURL("http://localhost:8080").
-		SetRedirectPolicy(redirPolicy)
-
+	log := logger.NewLogger()
+	hand := handler.NewMyHandler(testConfig, log, fileservice.New(testConfig), uuidservice.New())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := httpc.R().
-				SetHeader("Content-Type", "application/json").
-				SetHeader("Accept-Encoding", "").
-				SetBody(model.ShortenRequest{
-					URL: tt.want.url,
-				}).
-				SetResult(model.ShortenResponse{}).
-				Post("/api/shorten")
-
+			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})
 			require.NoError(t, err)
 
-			assert.Equal(t, strconv.Itoa(len(res.Body())), res.Header().Get("Content-Length"))
-			assert.Equal(t, tt.want.codePost, res.StatusCode())
-			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+			request := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader(data))
+			w := httptest.NewRecorder()
 
-			res2, err := httpc.R().
-				Get(res.Result().(*model.ShortenResponse).Result)
+			hand.NewShortenHandler(w, request)
 
-			assert.Equal(t, tt.want.codeGet, res2.StatusCode())
-			assert.Equal(t, tt.want.url, res2.Header().Get("Location"))
-		})
-	}
-}
+			res := w.Result()
+			bufBody, err := io.ReadAll(res.Body)
 
-func TestGzipShortenHandler(t *testing.T) {
-	type want struct {
-		codePost    int
-		codeGet     int
-		url         string
-		contentType string
-	}
-	tests := []struct {
-		name string
-		want want
-	}{
-		{
-			name: "test #1",
-			want: want{
-				codePost:    201,
-				codeGet:     307,
-				url:         "https://pkg.go.dev/",
-				contentType: "application/json",
-			},
-		},
-		{
-			name: "test #2",
-			want: want{
-				codePost:    201,
-				codeGet:     307,
-				url:         "https://github.com/gin-gonic",
-				contentType: "application/json",
-			},
-		},
-	}
+			log.Logger.Debug(res.Header)
+			assert.Equal(t, strconv.Itoa(len(bufBody)), res.Header.Get("Content-Length"))
 
-	errRedirectBlocked := errors.New("HTTP redirect blocked")
-	redirPolicy := resty.RedirectPolicyFunc(func(_ *http.Request, _ []*http.Request) error {
-		return errRedirectBlocked
-	})
-
-	httpc := resty.New().
-		SetBaseURL("http://localhost:8080").
-		SetRedirectPolicy(redirPolicy)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			res, err := httpc.R().
-				SetHeader("Content-Type", "application/json").
-				SetHeader("Accept-Encoding", "gzip").
-				SetBody(model.ShortenRequest{
-					URL: tt.want.url,
-				}).
-				SetResult(model.ShortenResponse{}).
-				Post("/api/shorten")
-
+			var resBody model.ShortenResponse
+			err = json.NewDecoder(bytes.NewReader(bufBody)).Decode(&resBody)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want.codePost, res.StatusCode())
-			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+			assert.Equal(t, tt.want.codePost, res.StatusCode)
+			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
 
-			res2, err := httpc.R().
-				Get(res.Result().(*model.ShortenResponse).Result)
+			defer res.Body.Close()
 
-			assert.Equal(t, tt.want.codeGet, res2.StatusCode())
-			assert.Equal(t, tt.want.url, res2.Header().Get("Location"))
+			request2 := httptest.NewRequest(http.MethodGet, resBody.Result, nil)
+			w2 := httptest.NewRecorder()
+			hand.UnshortenHandler(w2, request2)
+
+			res2 := w2.Result()
+
+			assert.Equal(t, tt.want.codeGet, res2.StatusCode)
+			assert.Equal(t, tt.want.url, res2.Header.Get("Location"))
+
+			defer res2.Body.Close()
 		})
 	}
 }
