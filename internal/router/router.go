@@ -34,3 +34,7 @@ func (r *MyRouter) POST(pattern string, handler func(w http.ResponseWriter, r *h
 		handler(c.Writer, c.Request)
 	})
 }
+
+func (r *MyRouter) Middleware(middleware ...gin.HandlerFunc) {
+	r.Engine.Use(middleware...)
+}

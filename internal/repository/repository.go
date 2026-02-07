@@ -1,29 +1,15 @@
 package repository
 
-import (
-	"sync"
-
-	"github.com/google/uuid"
-)
-
 type Repository interface {
+	Load() map[string]string
+	Save(map[string]string) error
 	Shorten(string) (string, error)
 	Unshorten(string) (string, error)
 }
 
-var bd = make(map[string]string)
-var mu sync.RWMutex
-
-func Shorten(url string) (string, error) {
-	mu.Lock()
-	defer mu.Unlock()
-	shurl := uuid.New().String()
-	bd[shurl] = url
-	return shurl, nil
-}
-
-func Unshorten(shurl string) (string, error) {
-	mu.RLock()
-	defer mu.RUnlock()
-	return bd[shurl], nil
+type FileStorageRepository interface {
+	Save(map[string]string) error
+	Load() (map[string]string, error)
+	Delete() error
+	Close() error
 }
