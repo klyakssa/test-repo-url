@@ -143,8 +143,8 @@ func TestNewShortenHandler(t *testing.T) {
 
 			res := w.Result()
 			bufBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
 
-			log.Logger.Debug(res.Header)
 			assert.Equal(t, strconv.Itoa(len(bufBody)), res.Header.Get("Content-Length"))
 
 			var resBody model.ShortenResponse
