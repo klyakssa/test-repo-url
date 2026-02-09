@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/klyakssa/go-musthave-shortener-tpl/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/config"
 )
 
 type MyRouter struct {
@@ -33,4 +33,8 @@ func (r *MyRouter) POST(pattern string, handler func(w http.ResponseWriter, r *h
 	r.Engine.POST(pattern, func(c *gin.Context) {
 		handler(c.Writer, c.Request)
 	})
+}
+
+func (r *MyRouter) Middleware(middleware ...gin.HandlerFunc) {
+	r.Engine.Use(middleware...)
 }
