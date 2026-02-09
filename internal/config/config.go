@@ -6,12 +6,12 @@ import (
 )
 
 type FileStorage struct {
-	Path string `env:"FILE_STORAGE_PATH"`
+	Path string `env:"FILE_STORAGE_PATH" envDefault:""`
 }
 
 type WebConfig struct {
-	HostPort string `env:"SERVER_ADDRESS"`
-	BaseUrl  string `env:"BASE_URL"`
+	HostPort string `env:"SERVER_ADDRESS" envDefault:""`
+	BaseUrl  string `env:"BASE_URL" envDefault:""`
 }
 
 type Config struct {
@@ -20,20 +20,28 @@ type Config struct {
 }
 
 func InitFlagConfig() *Config {
-	cfg := &Config{}
+	cfg := Config{}
 
 	env.Parse(&cfg.WebConfig)
 	env.Parse(&cfg.File)
-	if cfg.WebConfig.HostPort == "" {
-		pflag.StringVarP(&cfg.WebConfig.HostPort, "server", "a", "localhost:8080", "server host")
-	}
-	if cfg.WebConfig.BaseUrl == "" {
-		pflag.StringVarP(&cfg.WebConfig.BaseUrl, "base", "b", "http://localhost:8080", "base url")
-	}
-	if cfg.File.Path == "" {
-		pflag.StringVarP(&cfg.File.Path, "file", "f", "./storage.json", "file storage path")
-	}
+
+	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
+	flagBaseUrl := pflag.StringP("base", "b", "http://localhost:8080", "base url")
+	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
 
 	pflag.Parse()
-	return cfg
+
+	if cfg.WebConfig.HostPort == "" {
+		cfg.WebConfig.HostPort = *flagHostPort
+	}
+
+	if cfg.WebConfig.BaseUrl == "" {
+		cfg.WebConfig.BaseUrl = *flagBaseUrl
+	}
+
+	if cfg.File.Path == "" {
+		cfg.File.Path = *flagFilePath
+	}
+
+	return &cfg
 }

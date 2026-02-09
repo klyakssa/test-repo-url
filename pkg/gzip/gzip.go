@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -31,9 +30,7 @@ func (c *CompressWriter) Header() http.Header {
 func (c *CompressWriter) Write(b []byte) (int, error) {
 	if strings.Contains(c.w.Header().Get("Content-Type"), "application/json") || strings.Contains(c.w.Header().Get("Content-Type"), "text/html") {
 		c.w.Header().Set("Content-Encoding", "gzip")
-		size, err := c.zw.Write(b)
-		c.w.Header().Set("Content-Length", strconv.Itoa(size))
-		return size, err
+		return c.zw.Write(b)
 	}
 	return c.w.Write(b)
 }
