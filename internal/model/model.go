@@ -9,9 +9,9 @@ type ShortenResponse struct {
 }
 
 type FileStorageData struct {
-	Uuid  string `json:"uuid"`
-	S_URL string `json:"short_url"`
-	O_URL string `json:"original_url"`
+	UUID string `json:"uuid"`
+	SUrl string `json:"short_url"`
+	OUrl string `json:"original_url"`
 }
 
 var AcceptedContentTypes = []string{
