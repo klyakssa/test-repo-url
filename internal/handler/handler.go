@@ -12,6 +12,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
+	"github.com/klyakssa/test-repo-url/internal/service/pgxservice"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
 )
@@ -21,14 +22,16 @@ type MyHandlerStruct struct {
 	Logger *logger.MyLogger
 	FS     *fileservice.FileService
 	UUID   *uuidservice.UUIDService
+	DB     *pgxservice.NewPgxService
 }
 
-func NewMyHandler(cfg *config.Config, l *logger.MyLogger, fs *fileservice.FileService, uuid *uuidservice.UUIDService) *MyHandlerStruct {
+func NewMyHandler(cfg *config.Config, l *logger.MyLogger, fs *fileservice.FileService, uuid *uuidservice.UUIDService, db *pgxservice.NewPgxService) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		cfg:    cfg,
 		Logger: l,
 		FS:     fs,
 		UUID:   uuid,
+		DB:     db,
 	}
 }
 
@@ -39,6 +42,7 @@ func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 		if supportsGzip {
 			gz := gzip.NewCompressWriter(c.Writer)
 			c.Writer = gz
+			h.Logger.Debug(c.Writer.Header())
 			defer gz.Close()
 		}
 
@@ -47,7 +51,7 @@ func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 		if sendsGzip {
 			cr, err := gzip.NewCompressReader(c.Request.Body)
 			if err != nil {
-				h.Logger.Logger.Error(err)
+				h.Logger.Error(err)
 				c.Writer.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -72,7 +76,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.Logger.Logger.Debug(string(body), " to ", shrt)
+	h.Logger.Debug(string(body), " to ", shrt)
 
 	if err = r.Body.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -91,13 +95,13 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Logger.Logger.Debug(r.URL.Path[1:], " to ", lng)
+	h.Logger.Debug(r.URL.Path[1:], " to ", lng)
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Logger.Debug(r.Header)
+	h.Logger.Debug(r.Header)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -115,7 +119,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Logger.Logger.Debug(req.URL, " to ", shrt)
+	h.Logger.Debug(req.URL, " to ", shrt)
 
 	if err = r.Body.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -134,4 +138,12 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusCreated)
 	w.Write(data)
+}
+
+func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
+	if err := h.DB.Ping(r.Context()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -5,10 +5,12 @@ import (
 	"os/signal"
 
 	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/router"
 	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
+	"github.com/klyakssa/test-repo-url/internal/service/pgxservice"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 )
 
@@ -22,32 +24,46 @@ func main() {
 	uuid := uuidservice.New()
 	data, err := fs.Load()
 	if err != nil {
+		log.Error(err)
 		panic(err)
 	}
 	err = uuid.Save(data)
 	if err != nil {
+		log.Error(err)
 		panic(err)
 	}
 
-	h := handler.NewMyHandler(config, log, fs, uuid)
+	db, err := postgres.ConnectPostgres(config)
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
+	ps := pgxservice.New(log, db)
+
+	h := handler.NewMyHandler(config, log, fs, uuid, ps)
 	r.Middleware(log.WithLogging())
 	r.Middleware(h.GzipMiddleware())
+
+	r.GET("/ping", h.PingPostgresHandler)
 	r.GET("/:uuid", h.UnshortenHandler)
 	r.POST("/", h.ShortenHandler)
 	r.POST("/api/shorten", h.NewShortenHandler)
+
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {
+			log.Error(err)
 			panic(err)
 		}
 	}()
+
 	defer func() {
 		if err := fs.Save(uuid.Load()); err != nil {
-			log.Logger.Error(err)
+			log.Error(err)
 		}
 		if err := fs.Close(); err != nil {
-			log.Logger.Error(err)
+			log.Error(err)
 		}
-		log.Logger.Info("Shutting down gracefully")
+		log.Info("Shutting down gracefully")
 	}()
 
 	sigChan := make(chan os.Signal, 1)
