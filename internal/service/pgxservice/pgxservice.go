@@ -1,8 +1,6 @@
 package pgxservice
 
 import (
-	"context"
-
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/repository"
 )
@@ -19,6 +17,6 @@ func New(log *logger.MyLogger, repo repository.PostgresRepository) *NewPgxServic
 	}
 }
 
-func (s *NewPgxService) Ping(ctx context.Context) error {
-	return s.repo.Ping(ctx)
+func (s *NewPgxService) Ping() error {
+	return s.repo.Ping()
 }

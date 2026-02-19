@@ -8,6 +8,12 @@ type ShortenResponse struct {
 	Result string `json:"result"`
 }
 
+type DBStorageData struct {
+	UUID string `json:"uuid"`
+	SUrl string `json:"short_url"`
+	OUrl string `json:"original_url"`
+}
+
 type FileStorageData struct {
 	UUID string `json:"uuid"`
 	SUrl string `json:"short_url"`

@@ -141,7 +141,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
-	if err := h.DB.Ping(r.Context()); err != nil {
+	if err := h.DB.Ping(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
