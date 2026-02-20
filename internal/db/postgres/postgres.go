@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 
@@ -16,20 +17,42 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
-type PostgresDB struct {
+var (
+	ErrConnection = errors.New("connection error")
+	ErrMigration  = errors.New("migration error")
+)
+
+type PostgresStorage struct {
+	conn *sqlx.DB
 }
 
-func ConnectPostgres(cfg *config.Config) (*sqlx.DB, error) {
+func NewPostgresStorage(cfg *config.Config) (*PostgresStorage, error) {
+	c, err := connectPostgres(cfg)
+	return &PostgresStorage{
+			conn: c,
+		},
+		err
+}
+
+func (ps *PostgresStorage) PingContext(ctx context.Context) error {
+	return ps.conn.PingContext(ctx)
+}
+
+func (ps *PostgresStorage) Close() error {
+	return ps.conn.Close()
+}
+
+func connectPostgres(cfg *config.Config) (*sqlx.DB, error) {
 	dbpool, err := pgxpool.New(context.Background(), cfg.PostDB.ConnString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
+		return nil, ErrConnection
 	}
 	db := stdlib.OpenDBFromPool(dbpool)
 	sqlxDB := sqlx.NewDb(db, "pgx")
 	if err := applyMigrations(sqlxDB); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to apply migration: %v\n", err)
-		return nil, err
+		return nil, ErrMigration
 	}
 	return sqlxDB, nil
 }

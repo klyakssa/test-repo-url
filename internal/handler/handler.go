@@ -11,27 +11,21 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
-	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
-	"github.com/klyakssa/test-repo-url/internal/service/pgxservice"
-	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
 )
 
 type MyHandlerStruct struct {
-	cfg    *config.Config
-	Logger *logger.MyLogger
-	FS     *fileservice.FileService
-	UUID   *uuidservice.UUIDService
-	DB     *pgxservice.NewPgxService
+	cfg     *config.Config
+	Logger  *logger.MyLogger
+	service repository.UserService
 }
 
-func NewMyHandler(cfg *config.Config, l *logger.MyLogger, fs *fileservice.FileService, uuid *uuidservice.UUIDService, db *pgxservice.NewPgxService) *MyHandlerStruct {
+func NewMyHandler(cfg *config.Config, l *logger.MyLogger, uuid repository.UserService) *MyHandlerStruct {
 	return &MyHandlerStruct{
-		cfg:    cfg,
-		Logger: l,
-		FS:     fs,
-		UUID:   uuid,
-		DB:     db,
+		cfg:     cfg,
+		Logger:  l,
+		service: uuid,
 	}
 }
 
@@ -70,7 +64,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	shrt, err := h.UUID.Shorten(string(body))
+	shrt, err := h.service.Shorten(string(body))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,7 +84,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
-	lng, err := h.UUID.Unshorten(r.URL.Path[1:])
+	lng, err := h.service.Unshorten(r.URL.Path[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -114,7 +108,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	shrt, err := h.UUID.Shorten(req.URL)
+	shrt, err := h.service.Shorten(req.URL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -141,7 +135,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
-	if err := h.DB.Ping(); err != nil {
+	if err := h.service.PingContext(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

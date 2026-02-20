@@ -1,6 +1,9 @@
 package uuidservice
 
 import (
+	"context"
+
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 )
@@ -40,4 +43,8 @@ func (s *UUIDService) Save(data map[string]string) error {
 		return nil
 	}
 	return s.repo.Save(data)
+}
+
+func (s *UUIDService) PingContext(ctx context.Context) error {
+	return postgres.ErrConnection
 }

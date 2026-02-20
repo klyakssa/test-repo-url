@@ -1,5 +1,7 @@
 package repository
 
+import "context"
+
 type Repository interface {
 	Load() map[string]string
 	Save(map[string]string) error
@@ -15,5 +17,13 @@ type FileStorageRepository interface {
 }
 
 type PostgresRepository interface {
-	Ping() error
+	Shorten(string) (string, error)
+	Unshorten(string) (string, error)
+	PingContext(context.Context) error
+}
+
+type UserService interface {
+	Shorten(string) (string, error)
+	Unshorten(string) (string, error)
+	PingContext(context.Context) error
 }

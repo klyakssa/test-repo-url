@@ -34,7 +34,7 @@ func InitFlagConfig() *Config {
 	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
 	flagBaseUrl := pflag.StringP("base", "b", "http://localhost:8080", "base url")
 	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
-	flagConnString := pflag.StringP("postgresdb", "d", "postgres://postgres:postgres@localhost:9999/postgres?sslmode=disable", "database connection string")
+	flagConnString := pflag.StringP("postgresdb", "d", "postgres://postgres:11@localhost:5432/test_prac?sslmode=disable", "database connection string")
 
 	pflag.Parse()
 

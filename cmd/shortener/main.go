@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"os/signal"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
+	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/internal/router"
 	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
 	"github.com/klyakssa/test-repo-url/internal/service/pgxservice"
@@ -33,14 +35,20 @@ func main() {
 		panic(err)
 	}
 
-	db, err := postgres.ConnectPostgres(config)
+	db, err := postgres.NewPostgresStorage(config)
 	if err != nil {
 		log.Error(err)
-		panic(err)
 	}
 	ps := pgxservice.New(log, db)
 
-	h := handler.NewMyHandler(config, log, fs, uuid, ps)
+	var userService repository.UserService
+	if errors.Is(err, postgres.ErrConnection) {
+		userService = uuid
+	} else {
+		userService = ps
+	}
+
+	h := handler.NewMyHandler(config, log, userService)
 	r.Middleware(log.WithLogging())
 	r.Middleware(h.GzipMiddleware())
 
@@ -57,11 +65,17 @@ func main() {
 	}()
 
 	defer func() {
-		if err := fs.Save(uuid.Load()); err != nil {
-			log.Error(err)
-		}
-		if err := fs.Close(); err != nil {
-			log.Error(err)
+		if errors.Is(err, postgres.ErrConnection) {
+			if err := fs.Save(uuid.Load()); err != nil {
+				log.Error(err)
+			}
+			if err := fs.Close(); err != nil {
+				log.Error(err)
+			}
+		} else {
+			if err := db.Close(); err != nil {
+				log.Error(err)
+			}
 		}
 		log.Info("Shutting down gracefully")
 	}()
