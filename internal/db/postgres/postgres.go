@@ -23,38 +23,41 @@ var (
 )
 
 type PostgresStorage struct {
-	conn *sqlx.DB
+	*sqlx.DB
+	cfg *config.Config
 }
 
 func NewPostgresStorage(cfg *config.Config) (*PostgresStorage, error) {
 	c, err := connectPostgres(cfg)
 	return &PostgresStorage{
-			conn: c,
+			c,
+			cfg,
 		},
 		err
 }
 
 func (ps *PostgresStorage) PingContext(ctx context.Context) error {
-	return ps.conn.PingContext(ctx)
+	return ps.PingContext(ctx)
 }
 
 func (ps *PostgresStorage) Close() error {
-	return ps.conn.Close()
+	return ps.DB.Close()
 }
 
 func connectPostgres(cfg *config.Config) (*sqlx.DB, error) {
+	var errs []error
 	dbpool, err := pgxpool.New(context.Background(), cfg.PostDB.ConnString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		return nil, ErrConnection
+		errs = append(errs, err)
 	}
 	db := stdlib.OpenDBFromPool(dbpool)
 	sqlxDB := sqlx.NewDb(db, "pgx")
 	if err := applyMigrations(sqlxDB); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to apply migration: %v\n", err)
-		return nil, ErrMigration
+		errs = append(errs, err)
 	}
-	return sqlxDB, nil
+	return sqlxDB, errors.Join(errs...)
 }
 
 func applyMigrations(db *sqlx.DB) error {

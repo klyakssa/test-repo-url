@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"os/signal"
 
@@ -9,11 +8,9 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
-	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/internal/router"
-	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
-	"github.com/klyakssa/test-repo-url/internal/service/pgxservice"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 )
 
 func main() {
@@ -22,33 +19,19 @@ func main() {
 	log := logger.NewLogger()
 	r := router.NewMyRouter(config)
 
-	fs := fileservice.New(config)
-	uuid := uuidservice.New()
-	data, err := fs.Load()
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-	err = uuid.Save(data)
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-
 	db, err := postgres.NewPostgresStorage(config)
 	if err != nil {
 		log.Error(err)
 	}
-	ps := pgxservice.New(log, db)
 
-	var userService repository.UserService
-	if errors.Is(err, postgres.ErrConnection) {
-		userService = uuid
+	var userService *uuidservice.UUIDService
+	if err != nil {
+		userService = uuidservice.New(uuidstorage.New(config))
 	} else {
-		userService = ps
+		userService = uuidservice.New(db)
 	}
 
-	h := handler.NewMyHandler(config, log, userService)
+	h := handler.NewMyHandler(log, userService)
 	r.Middleware(log.WithLogging())
 	r.Middleware(h.GzipMiddleware())
 
@@ -65,17 +48,8 @@ func main() {
 	}()
 
 	defer func() {
-		if errors.Is(err, postgres.ErrConnection) {
-			if err := fs.Save(uuid.Load()); err != nil {
-				log.Error(err)
-			}
-			if err := fs.Close(); err != nil {
-				log.Error(err)
-			}
-		} else {
-			if err := db.Close(); err != nil {
-				log.Error(err)
-			}
+		if err := userService.Close(); err != nil {
+			log.Error(err)
 		}
 		log.Info("Shutting down gracefully")
 	}()

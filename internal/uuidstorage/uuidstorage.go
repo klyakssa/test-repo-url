@@ -1,44 +1,77 @@
 package uuidstorage
 
 import (
+	"context"
+	"fmt"
 	"sync"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
+	"github.com/klyakssa/test-repo-url/internal/filestorage"
 )
 
 type UUIDStorage struct {
-	mu sync.RWMutex
-	bd map[string]string
+	mu  sync.RWMutex
+	bd  map[string]string
+	fs  *filestorage.FileStorage
+	cfg *config.Config
 }
 
-func New() *UUIDStorage {
-	return &UUIDStorage{
-		bd: make(map[string]string),
-		mu: sync.RWMutex{},
+func New(cfg *config.Config) *UUIDStorage {
+	fs, err := filestorage.New(cfg.File.Path)
+	if err != nil {
+		log.Error(err)
+		panic(err)
 	}
+	uuidstorage := &UUIDStorage{
+		bd:  make(map[string]string),
+		mu:  sync.RWMutex{},
+		fs:  fs,
+		cfg: cfg,
+	}
+	data, err := fs.Load()
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
+	return uuidstorage.save(data)
 }
 
-func (s *UUIDStorage) Shorten(url string) (string, error) {
+func (s *UUIDStorage) Shorten(url string, ctx context.Context) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	shurl := uuid.NewString()
 	s.bd[shurl] = url
-	return shurl, nil
+	return fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseUrl, shurl), nil
 }
 
-func (s *UUIDStorage) Unshorten(shurl string) (string, error) {
+func (s *UUIDStorage) Unshorten(uuid string, ctx context.Context) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.bd[shurl], nil
+	return s.bd[uuid], nil
 }
 
-func (s *UUIDStorage) Load() map[string]string {
+func (s *UUIDStorage) load() map[string]string {
 	return s.bd
 }
 
-func (s *UUIDStorage) Save(data map[string]string) error {
+func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.bd = data
-	return nil
+	return s
+}
+
+func (s *UUIDStorage) Close() error {
+	if err := s.fs.Save(s.load()); err != nil {
+		log.Error(err)
+		return err
+	}
+	return s.fs.Close()
+}
+
+func (s *UUIDStorage) PingContext(ctx context.Context) error {
+	return postgres.ErrConnection
 }

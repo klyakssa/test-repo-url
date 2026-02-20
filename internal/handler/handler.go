@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
@@ -16,14 +15,12 @@ import (
 )
 
 type MyHandlerStruct struct {
-	cfg     *config.Config
 	Logger  *logger.MyLogger
 	service repository.UserService
 }
 
-func NewMyHandler(cfg *config.Config, l *logger.MyLogger, uuid repository.UserService) *MyHandlerStruct {
+func NewMyHandler(l *logger.MyLogger, uuid repository.UserService) *MyHandlerStruct {
 	return &MyHandlerStruct{
-		cfg:     cfg,
 		Logger:  l,
 		service: uuid,
 	}
@@ -64,7 +61,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	shrt, err := h.service.Shorten(string(body))
+	shrt, err := h.service.Shorten(string(body), r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,13 +75,12 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Length", strconv.Itoa(len(h.cfg.WebConfig.BaseUrl+"/"+shrt)))
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.cfg.WebConfig.BaseUrl + "/" + shrt))
+	w.Write([]byte(shrt))
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
-	lng, err := h.service.Unshorten(r.URL.Path[1:])
+	lng, err := h.service.Unshorten(r.URL.Path[1:], r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,7 +104,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	shrt, err := h.service.Shorten(req.URL)
+	shrt, err := h.service.Shorten(req.URL, r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -121,7 +117,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	data, err := json.Marshal(model.ShortenResponse{
-		Result: h.cfg.WebConfig.BaseUrl + "/" + shrt,
+		Result: shrt,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

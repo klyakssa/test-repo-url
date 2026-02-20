@@ -12,10 +12,12 @@ import (
 	"testing"
 
 	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,9 +65,20 @@ func TestMainHandler(t *testing.T) {
 		},
 	}
 	log := logger.NewLogger()
-	uuid := uuidservice.New()
 
-	hand := handler.NewMyHandler(testConfig, log, uuid)
+	db, err := postgres.NewPostgresStorage(testConfig)
+	if err != nil {
+		log.Error(err)
+	}
+
+	var userService *uuidservice.UUIDService
+	if err != nil {
+		userService = uuidservice.New(uuidstorage.New(testConfig))
+	} else {
+		userService = uuidservice.New(db)
+	}
+
+	hand := handler.NewMyHandler(log, userService)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -129,7 +142,19 @@ func TestNewShortenHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	hand := handler.NewMyHandler(testConfig, log, uuidservice.New())
+	db, err := postgres.NewPostgresStorage(testConfig)
+	if err != nil {
+		log.Error(err)
+	}
+
+	var userService *uuidservice.UUIDService
+	if err != nil {
+		userService = uuidservice.New(uuidstorage.New(testConfig))
+	} else {
+		userService = uuidservice.New(db)
+	}
+
+	hand := handler.NewMyHandler(log, userService)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})
@@ -186,7 +211,19 @@ func TestPingHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	hand := handler.NewMyHandler(testConfig, log, uuidservice.New())
+	db, err := postgres.NewPostgresStorage(testConfig)
+	if err != nil {
+		log.Error(err)
+	}
+
+	var userService *uuidservice.UUIDService
+	if err != nil {
+		userService = uuidservice.New(uuidstorage.New(testConfig))
+	} else {
+		userService = uuidservice.New(db)
+	}
+
+	hand := handler.NewMyHandler(log, userService)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
