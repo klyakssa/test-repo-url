@@ -37,17 +37,45 @@ func New(cfg *config.Config) *UUIDStorage {
 }
 
 func (s *UUIDStorage) Shorten(url string, ctx context.Context) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	shurl := uuid.NewString()
-	s.bd[shurl] = url
-	return fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, shurl), nil
+	done := make(chan struct{})
+	var result string
+
+	go func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		shurl := uuid.NewString()
+		s.bd[shurl] = url
+		result = fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, shurl)
+
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-done:
+		return result, nil
+	}
 }
 
 func (s *UUIDStorage) Unshorten(uuid string, ctx context.Context) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.bd[uuid], nil
+	done := make(chan struct{})
+	var result string
+
+	go func() {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		result = s.bd[uuid]
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-done:
+		return result, nil
+	}
 }
 
 func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
