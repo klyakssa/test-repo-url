@@ -38,3 +38,7 @@ func (r *MyRouter) POST(pattern string, handler func(w http.ResponseWriter, r *h
 func (r *MyRouter) Middleware(middleware ...gin.HandlerFunc) {
 	r.Engine.Use(middleware...)
 }
+
+func (r *MyRouter) Group(grp string) *RouterGroup {
+	return NewGroup(r.Engine.Group(grp))
+}

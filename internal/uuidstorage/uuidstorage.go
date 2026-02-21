@@ -53,19 +53,17 @@ func (s *UUIDStorage) Unshorten(uuid string, ctx context.Context) (string, error
 	return s.bd[uuid], nil
 }
 
-func (s *UUIDStorage) load() map[string]string {
-	return s.bd
-}
-
 func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.bd = data
+	if data != nil {
+		s.bd = data
+	}
 	return s
 }
 
 func (s *UUIDStorage) Close() error {
-	if err := s.fs.Save(s.load()); err != nil {
+	if err := s.fs.Save(s.bd); err != nil {
 		log.Error(err)
 		return err
 	}

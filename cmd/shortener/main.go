@@ -38,7 +38,9 @@ func main() {
 	r.GET("/ping", h.PingPostgresHandler)
 	r.GET("/:uuid", h.UnshortenHandler)
 	r.POST("/", h.ShortenHandler)
-	r.POST("/api/shorten", h.NewShortenHandler)
+	v1 := r.Group("/api/shorten")
+	v1.POST("/", h.NewShortenHandler)
+	v1.POST("/batch", h.BatchHandler)
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {
@@ -50,8 +52,9 @@ func main() {
 	defer func() {
 		if err := userService.Close(); err != nil {
 			log.Error(err)
+		} else {
+			log.Info("Shutting down gracefully")
 		}
-		log.Info("Shutting down gracefully")
 	}()
 
 	sigChan := make(chan os.Signal, 1)

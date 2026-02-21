@@ -33,7 +33,6 @@ func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 		if supportsGzip {
 			gz := gzip.NewCompressWriter(c.Writer)
 			c.Writer = gz
-			h.Logger.Debug(c.Writer.Header())
 			defer gz.Close()
 		}
 
@@ -75,6 +74,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Length", strconv.Itoa(len([]byte(shrt))))
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(shrt))
 }
@@ -131,9 +131,53 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Debug("PingPostgresHandler")
 	if err := h.service.PingContext(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Debug("BatchHandler")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var req []model.BatchShortenRequest
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = r.Body.Close(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var resp []model.BatchShortenResponse
+	for _, v := range req {
+		shrt, err := h.service.Shorten(v.OUrl, r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp = append(resp, model.BatchShortenResponse{
+			CorrelationID: v.CorrelationID,
+			SOrl:          shrt,
+		})
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(data)
 }

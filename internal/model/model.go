@@ -8,16 +8,20 @@ type ShortenResponse struct {
 	Result string `json:"result"`
 }
 
-type DBStorageData struct {
+type FileStorageData struct {
 	UUID string `json:"uuid"`
 	SUrl string `json:"short_url"`
 	OUrl string `json:"original_url"`
 }
 
-type FileStorageData struct {
-	UUID string `json:"uuid"`
-	SUrl string `json:"short_url"`
-	OUrl string `json:"original_url"`
+type BatchShortenResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	SOrl          string `json:"short_url"`
+}
+
+type BatchShortenRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OUrl          string `json:"original_url"`
 }
 
 var AcceptedContentTypes = []string{
