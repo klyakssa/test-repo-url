@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/pressly/goose/v3"
 )
 
@@ -25,13 +26,15 @@ var (
 type PostgresStorage struct {
 	*sqlx.DB
 	cfg *config.Config
+	l   *logger.MyLogger
 }
 
-func NewPostgresStorage(cfg *config.Config) (*PostgresStorage, error) {
+func NewPostgresStorage(cfg *config.Config, l *logger.MyLogger) (*PostgresStorage, error) {
 	c, err := connectPostgres(cfg)
 	return &PostgresStorage{
 			c,
 			cfg,
+			l,
 		},
 		err
 }

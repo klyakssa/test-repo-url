@@ -19,7 +19,7 @@ func main() {
 	log := logger.NewLogger()
 	r := router.NewMyRouter(config)
 
-	db, err := postgres.NewPostgresStorage(config)
+	db, err := postgres.NewPostgresStorage(config, log)
 	if err != nil {
 		log.Error(err)
 	}
@@ -34,6 +34,7 @@ func main() {
 	h := handler.NewMyHandler(log, userService)
 	r.Middleware(log.WithLogging())
 	r.Middleware(h.GzipMiddleware())
+	r.Middleware(h.ErrorMiddleware())
 
 	r.GET("/ping", h.PingPostgresHandler)
 	r.GET("/:uuid", h.UnshortenHandler)

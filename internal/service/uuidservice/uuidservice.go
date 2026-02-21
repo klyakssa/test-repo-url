@@ -17,19 +17,11 @@ func New(repo repository.Repository) *UUIDService {
 }
 
 func (s *UUIDService) Shorten(url string, ctx context.Context) (string, error) {
-	shurl, err := s.repo.Shorten(url, ctx)
-	if err != nil {
-		return "", err
-	}
-	return shurl, nil
+	return s.repo.Shorten(url, ctx)
 }
 
 func (s *UUIDService) Unshorten(uuid string, ctx context.Context) (string, error) {
-	url, err := s.repo.Unshorten(uuid, ctx)
-	if err != nil {
-		return "", err
-	}
-	return url, nil
+	return s.repo.Unshorten(uuid, ctx)
 }
 
 func (s *UUIDService) Close() error {

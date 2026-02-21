@@ -66,7 +66,7 @@ func TestMainHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	db, err := postgres.NewPostgresStorage(testConfig)
+	db, err := postgres.NewPostgresStorage(testConfig, log)
 	if err != nil {
 		log.Error(err)
 	}
@@ -142,7 +142,7 @@ func TestNewShortenHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	db, err := postgres.NewPostgresStorage(testConfig)
+	db, err := postgres.NewPostgresStorage(testConfig, log)
 	if err != nil {
 		log.Error(err)
 	}
@@ -211,7 +211,7 @@ func TestPingHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	db, err := postgres.NewPostgresStorage(testConfig)
+	db, err := postgres.NewPostgresStorage(testConfig, log)
 	if err != nil {
 		log.Error(err)
 	}

@@ -2,16 +2,19 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
+	"github.com/klyakssa/test-repo-url/pkg/httperror"
 )
 
 type MyHandlerStruct struct {
@@ -53,25 +56,51 @@ func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 	}
 }
 
+func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ew := httperror.NewErrorsWriter(c.Writer, c)
+		c.Writer = ew
+		c.Next()
+
+		if rw, ok := c.Writer.(*httperror.ErrorsWriter); ok {
+			if len(c.Errors) > 0 {
+				err := c.Errors.Last().Err
+				if errors.Is(err, postgres.ErrInsertUniqueViolation) {
+					rw.WriteHeader(http.StatusConflict)
+				} else {
+					rw.WriteHeader(http.StatusInternalServerError)
+				}
+			}
+			rw.MyFlush()
+		}
+	}
+}
+
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Debug("ShortenHandler")
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	shrt, err := h.service.Shorten(string(body), r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	h.Logger.Debug(string(body), " to ", shrt)
-
 	if err = r.Body.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	shrt, err := h.service.Shorten(string(body), r.Context())
+	if err != nil {
+		if rw, ok := w.(*httperror.ErrorsWriter); ok {
+			rw.AddError(err)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	h.Logger.Debug(string(body), " to ", shrt)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len([]byte(shrt))))
@@ -104,17 +133,21 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	shrt, err := h.service.Shorten(req.URL, r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Logger.Debug(req.URL, " to ", shrt)
-
 	if err = r.Body.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	shrt, err := h.service.Shorten(req.URL, r.Context())
+	if err != nil {
+		if rw, ok := w.(*httperror.ErrorsWriter); ok {
+			rw.AddError(err)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	h.Logger.Debug(req.URL, " to ", shrt)
 
 	data, err := json.Marshal(model.ShortenResponse{
 		Result: shrt,
