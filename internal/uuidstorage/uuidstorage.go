@@ -41,7 +41,7 @@ func (s *UUIDStorage) Shorten(url string, ctx context.Context) (string, error) {
 	defer s.mu.Unlock()
 	shurl := uuid.NewString()
 	s.bd[shurl] = url
-	return fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseUrl, shurl), nil
+	return fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, shurl), nil
 }
 
 func (s *UUIDStorage) Unshorten(uuid string, ctx context.Context) (string, error) {

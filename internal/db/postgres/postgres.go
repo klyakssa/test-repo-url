@@ -39,12 +39,12 @@ func NewPostgresStorage(cfg *config.Config, l *logger.MyLogger) (*PostgresStorag
 		err
 }
 
-func (ps *PostgresStorage) PingContext(ctx context.Context) error {
-	return ps.PingContext(ctx)
+func (s *PostgresStorage) PingContext(ctx context.Context) error {
+	return s.DB.PingContext(ctx)
 }
 
-func (ps *PostgresStorage) Close() error {
-	return ps.DB.Close()
+func (s *PostgresStorage) Close() error {
+	return s.DB.Close()
 }
 
 func connectPostgres(cfg *config.Config) (*sqlx.DB, error) {

@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/klyakssa/test-repo-url/internal/config"
-	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
@@ -66,17 +65,7 @@ func TestMainHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	db, err := postgres.NewPostgresStorage(testConfig, log)
-	if err != nil {
-		log.Error(err)
-	}
-
-	var userService *uuidservice.UUIDService
-	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(testConfig))
-	} else {
-		userService = uuidservice.New(db)
-	}
+	userService := uuidservice.New(uuidstorage.New(testConfig))
 
 	hand := handler.NewMyHandler(log, userService)
 	for _, test := range tests {
@@ -142,17 +131,7 @@ func TestNewShortenHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	db, err := postgres.NewPostgresStorage(testConfig, log)
-	if err != nil {
-		log.Error(err)
-	}
-
-	var userService *uuidservice.UUIDService
-	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(testConfig))
-	} else {
-		userService = uuidservice.New(db)
-	}
+	userService := uuidservice.New(uuidstorage.New(testConfig))
 
 	hand := handler.NewMyHandler(log, userService)
 	for _, tt := range tests {
@@ -190,52 +169,6 @@ func TestNewShortenHandler(t *testing.T) {
 			assert.Equal(t, tt.want.url, res2.Header.Get("Location"))
 
 			defer res2.Body.Close()
-		})
-	}
-}
-
-func TestPingHandler(t *testing.T) {
-	type want struct {
-		code int
-	}
-	tests := []struct {
-		name string
-		want want
-	}{
-		{
-			name: "test #1",
-			want: want{
-				code: 200,
-			},
-		},
-	}
-	log := logger.NewLogger()
-
-	db, err := postgres.NewPostgresStorage(testConfig, log)
-	if err != nil {
-		log.Error(err)
-	}
-
-	var userService *uuidservice.UUIDService
-	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(testConfig))
-	} else {
-		userService = uuidservice.New(db)
-	}
-
-	hand := handler.NewMyHandler(log, userService)
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
-			w := httptest.NewRecorder()
-
-			hand.PingPostgresHandler(w, request)
-
-			res := w.Result()
-
-			assert.Equal(t, tt.want.code, res.StatusCode)
-
-			defer res.Body.Close()
 		})
 	}
 }

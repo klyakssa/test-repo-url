@@ -11,7 +11,7 @@ type FileStorage struct {
 
 type WebConfig struct {
 	HostPort string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseUrl  string `env:"BASE_URL" envDefault:""`
+	BaseURL  string `env:"BASE_URL" envDefault:""`
 }
 
 type DBConfig struct {
@@ -32,7 +32,7 @@ func InitFlagConfig() *Config {
 	env.Parse(&cfg.PostDB)
 
 	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
-	flagBaseUrl := pflag.StringP("base", "b", "http://localhost:8080", "base url")
+	flagBaseURL := pflag.StringP("base", "b", "http://localhost:8080", "base url")
 	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
 	flagConnString := pflag.StringP("postgresdb", "d", "postgres://postgres:11@localhost:5432/test_prac?sslmode=disable", "database connection string") //-d=postgres://test:11@localhost:5432/prac?sslmode=disable
 
@@ -42,8 +42,8 @@ func InitFlagConfig() *Config {
 		cfg.WebConfig.HostPort = *flagHostPort
 	}
 
-	if cfg.WebConfig.BaseUrl == "" {
-		cfg.WebConfig.BaseUrl = *flagBaseUrl
+	if cfg.WebConfig.BaseURL == "" {
+		cfg.WebConfig.BaseURL = *flagBaseURL
 	}
 
 	if cfg.File.Path == "" {
