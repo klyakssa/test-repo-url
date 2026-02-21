@@ -40,7 +40,7 @@ func main() {
 	r.GET("/:uuid", h.UnshortenHandler)
 	r.POST("/", h.ShortenHandler)
 	v1 := r.Group("/api/shorten")
-	v1.POST("/", h.NewShortenHandler)
+	v1.POST("", h.NewShortenHandler)
 	v1.POST("/batch", h.BatchHandler)
 
 	go func() {
