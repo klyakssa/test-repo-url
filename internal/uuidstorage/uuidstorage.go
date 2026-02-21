@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
@@ -22,7 +21,6 @@ type UUIDStorage struct {
 func New(cfg *config.Config) *UUIDStorage {
 	fs, err := filestorage.New(cfg.File.Path)
 	if err != nil {
-		log.Error(err)
 		panic(err)
 	}
 	uuidstorage := &UUIDStorage{
@@ -33,7 +31,6 @@ func New(cfg *config.Config) *UUIDStorage {
 	}
 	data, err := fs.Load()
 	if err != nil {
-		log.Error(err)
 		panic(err)
 	}
 	return uuidstorage.save(data)
@@ -64,7 +61,6 @@ func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
 
 func (s *UUIDStorage) Close() error {
 	if err := s.fs.Save(s.bd); err != nil {
-		log.Error(err)
 		return err
 	}
 	return s.fs.Close()
