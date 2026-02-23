@@ -17,7 +17,7 @@ var (
 
 func (s *PostgresStorage) Shorten(ctx context.Context, url string) (string, error) {
 	uuid := uuid.NewString()
-	shurl, err := urls.JoinPath(s.cfg.WebConfig.BaseURL, uuid) //fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, uuid)
+	shurl, err := urls.JoinPath(s.cfg.WebConfig.BaseURL, uuid)
 	if err != nil {
 		return "", fmt.Errorf("join path: %w", err)
 	}
@@ -38,10 +38,16 @@ func (s *PostgresStorage) Shorten(ctx context.Context, url string) (string, erro
 
 func (s *PostgresStorage) Unshorten(ctx context.Context, uuid string) (url string, err error) {
 	err = s.QueryRowContext(ctx, "SELECT original_url FROM shorten_url WHERE uuid = $1", uuid).Scan(&url)
-	return url, fmt.Errorf("unshorten: %w", err)
+	if err != nil {
+		return "", fmt.Errorf("unshorten: %w", err)
+	}
+	return url, nil
 }
 
 func (s *PostgresStorage) selectShortURLByOriginalURL(url string, ctx context.Context) (shrtURL string, err error) {
 	err = s.QueryRowContext(ctx, "SELECT short_url FROM shorten_url WHERE original_url = $1", url).Scan(&shrtURL)
-	return shrtURL, fmt.Errorf("selectShortURLByOriginalURL: %w", err)
+	if err != nil {
+		return "", fmt.Errorf("selectShortURLByOriginalURL: %w", err)
+	}
+	return shrtURL, nil
 }

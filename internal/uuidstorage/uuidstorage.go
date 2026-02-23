@@ -3,6 +3,7 @@ package uuidstorage
 import (
 	"context"
 	"fmt"
+	urls "net/url"
 	"sync"
 
 	"github.com/google/uuid"
@@ -38,6 +39,7 @@ func New(cfg *config.Config) *UUIDStorage {
 
 func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 	done := make(chan struct{})
+	errChan := make(chan error, 1)
 	var result string
 
 	go func() {
@@ -46,12 +48,17 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 
 		shurl := uuid.NewString()
 		s.bd[shurl] = url
-		result = fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, shurl)
+		shurl, err := urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
+		if err != nil {
+			errChan <- fmt.Errorf("join path: %w", err)
+		}
 
 		close(done)
 	}()
 
 	select {
+	case err := <-errChan:
+		return "", err
 	case <-ctx.Done():
 		return "", ctx.Err()
 	case <-done:

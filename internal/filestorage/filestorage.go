@@ -77,5 +77,8 @@ func (f *FileStorage) Load() (map[string]string, error) {
 }
 
 func (f *FileStorage) Delete() error {
-	return fmt.Errorf("delete: %w", os.Remove(f.file.Name()))
+	if err := os.Remove(f.file.Name()); err != nil {
+		return fmt.Errorf("delete: %w", os.Remove(f.file.Name()))
+	}
+	return nil
 }
