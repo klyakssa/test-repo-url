@@ -48,7 +48,8 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 
 		shurl := uuid.NewString()
 		s.bd[shurl] = url
-		shurl, err := urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
+		var err error
+		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
 		if err != nil {
 			errChan <- fmt.Errorf("join path: %w", err)
 		}
