@@ -15,6 +15,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/repository"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
 	"github.com/klyakssa/test-repo-url/pkg/httperror"
+	"go.uber.org/zap"
 )
 
 type MyHandlerStruct struct {
@@ -68,7 +69,7 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 				if errors.Is(err, postgres.ErrInsertUniqueViolation) {
 					rw.WriteHeader(http.StatusConflict)
 				} else {
-					rw.WriteHeader(http.StatusInternalServerError)
+					rw.WriteString(http.StatusText(http.StatusInternalServerError))
 				}
 			}
 			rw.MyFlush()
@@ -81,26 +82,32 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	if err = r.Body.Close(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	shrt, err := h.service.Shorten(string(body), r.Context())
+	shrt, err := h.service.Shorten(r.Context(), string(body))
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			h.Logger.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	h.Logger.Debug(string(body), " to ", shrt)
+	h.Logger.Debug("ShortenHandler",
+		zap.String("from_body", string(body)),
+		zap.String("to_short", shrt),
+	)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len([]byte(shrt))))
@@ -109,51 +116,68 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
-	lng, err := h.service.Unshorten(r.URL.Path[1:], r.Context())
+	lng, err := h.service.Unshorten(r.Context(), r.URL.Path[1:])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	h.Logger.Debug(r.URL.Path[1:], " to ", lng)
+
+	h.Logger.Debug("UnshortenHandler",
+		zap.String("from_url", r.URL.Path[1:]),
+		zap.String("to_original", lng),
+	)
+
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug(r.Header)
+	h.Logger.Debug("NewShortenHandler",
+		zap.Any("headers", r.Header))
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	var req model.ShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
 		return
 	}
 
 	if err = r.Body.Close(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	shrt, err := h.service.Shorten(req.URL, r.Context())
+	shrt, err := h.service.Shorten(r.Context(), req.URL)
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			h.Logger.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	}
-	h.Logger.Debug(req.URL, " to ", shrt)
+
+	h.Logger.Debug("NewShortenHandler",
+		zap.String("from_url", req.URL),
+		zap.String("to_short", shrt),
+	)
 
 	data, err := json.Marshal(model.ShortenResponse{
 		Result: shrt,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
@@ -166,7 +190,8 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("PingPostgresHandler")
 	if err := h.service.PingContext(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -176,26 +201,30 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("BatchHandler")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	var req []model.BatchShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
 		return
 	}
 
 	if err = r.Body.Close(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	var resp []model.BatchShortenResponse
 	for _, v := range req {
-		shrt, err := h.service.Shorten(v.OUrl, r.Context())
+		shrt, err := h.service.Shorten(r.Context(), v.OUrl)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			h.Logger.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 		resp = append(resp, model.BatchShortenResponse{
@@ -206,7 +235,8 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := json.Marshal(resp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 

@@ -16,12 +16,12 @@ func New(repo repository.Repository) *UUIDService {
 	}
 }
 
-func (s *UUIDService) Shorten(url string, ctx context.Context) (string, error) {
-	return s.repo.Shorten(url, ctx)
+func (s *UUIDService) Shorten(ctx context.Context, url string) (string, error) {
+	return s.repo.Shorten(ctx, url)
 }
 
-func (s *UUIDService) Unshorten(uuid string, ctx context.Context) (string, error) {
-	return s.repo.Unshorten(uuid, ctx)
+func (s *UUIDService) Unshorten(ctx context.Context, uuid string) (string, error) {
+	return s.repo.Unshorten(ctx, uuid)
 }
 
 func (s *UUIDService) Close() error {

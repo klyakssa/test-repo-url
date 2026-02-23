@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 
@@ -14,6 +15,10 @@ import (
 )
 
 func main() {
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	errChan := make(chan error, 1)
 
 	config := config.InitFlagConfig()
 	log := logger.NewLogger()
@@ -45,12 +50,12 @@ func main() {
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {
-			log.Error(err)
-			panic(err)
+			errChan <- err
 		}
 	}()
 
 	defer func() {
+		cancel()
 		if err := userService.Close(); err != nil {
 			log.Error(err)
 		} else {
@@ -58,7 +63,25 @@ func main() {
 		}
 	}()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
-	<-sigChan
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt)
+
+		select {
+		case <-sigChan:
+			log.Info("Shutdown signal received")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	select {
+	case err := <-errChan:
+		log.Error("Application terminated with error: %v", err)
+		cancel()
+		os.Exit(1)
+	case <-ctx.Done():
+		log.Info("Application terminated gracefully")
+		os.Exit(0)
+	}
 }

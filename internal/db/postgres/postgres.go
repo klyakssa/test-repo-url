@@ -5,7 +5,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -48,30 +47,27 @@ func (s *PostgresStorage) Close() error {
 }
 
 func connectPostgres(cfg *config.Config) (*sqlx.DB, error) {
-	var errs []error
 	dbpool, err := pgxpool.New(context.Background(), cfg.PostDB.ConnString)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		errs = append(errs, err)
+		return nil, fmt.Errorf("pgxpool: %w", err)
 	}
 	db := stdlib.OpenDBFromPool(dbpool)
 	sqlxDB := sqlx.NewDb(db, "pgx")
 	if err := applyMigrations(sqlxDB); err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to apply migration: %v\n", err)
-		errs = append(errs, err)
+		return nil, fmt.Errorf("apply migrations: %w", err)
 	}
-	return sqlxDB, errors.Join(errs...)
+	return sqlxDB, nil
 }
 
 func applyMigrations(db *sqlx.DB) error {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return err
+		return fmt.Errorf("set dialect: %w", err)
 	}
 
 	if err := goose.Up(db.DB, "migrations"); err != nil {
-		return err
+		return fmt.Errorf("migrate: %w", err)
 	}
 
 	return nil

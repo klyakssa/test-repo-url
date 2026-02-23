@@ -13,7 +13,7 @@ type Repository interface {
 
 type UserService interface {
 	helpers
-	Shorten(string, context.Context) (string, error)
-	Unshorten(string, context.Context) (string, error)
+	Shorten(context.Context, string) (string, error)
+	Unshorten(context.Context, string) (string, error)
 	PingContext(context.Context) error
 }

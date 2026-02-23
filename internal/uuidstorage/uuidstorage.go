@@ -36,7 +36,7 @@ func New(cfg *config.Config) *UUIDStorage {
 	return uuidstorage.save(data)
 }
 
-func (s *UUIDStorage) Shorten(url string, ctx context.Context) (string, error) {
+func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 	done := make(chan struct{})
 	var result string
 
@@ -59,7 +59,7 @@ func (s *UUIDStorage) Shorten(url string, ctx context.Context) (string, error) {
 	}
 }
 
-func (s *UUIDStorage) Unshorten(uuid string, ctx context.Context) (string, error) {
+func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error) {
 	done := make(chan struct{})
 	var result string
 
