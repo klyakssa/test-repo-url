@@ -79,9 +79,7 @@ func main() {
 	case err := <-errChan:
 		log.Error("Application terminated with error: %v", err)
 		cancel()
-		os.Exit(1)
 	case <-ctx.Done():
 		log.Info("Application terminated gracefully")
-		os.Exit(0)
 	}
 }

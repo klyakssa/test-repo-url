@@ -2,6 +2,7 @@ package filestorage
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ type FileStorage struct {
 func New(path string) (*FileStorage, error) {
 	file, err := os.OpenFile(filepath.Join(path), os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open file: %w", err)
 	}
 	return &FileStorage{file: file}, nil
 }
@@ -38,21 +39,21 @@ func (f *FileStorage) Save(data map[string]string) error {
 	}
 	dt, err := json.Marshal(stf)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal: %w", err)
 	}
 
 	err = f.file.Truncate(0)
 	if err != nil {
-		return err
+		return fmt.Errorf("truncate: %w", err)
 	}
 
 	_, err = f.file.Seek(0, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("seek: %w", err)
 	}
 
 	_, err = f.file.Write(dt)
-	return err
+	return fmt.Errorf("write: %w", err)
 }
 
 func (f *FileStorage) Load() (map[string]string, error) {
@@ -66,7 +67,7 @@ func (f *FileStorage) Load() (map[string]string, error) {
 	var stf []model.FileStorageData
 	err = json.Unmarshal(data, &stf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal: %w", err)
 	}
 	m := make(map[string]string)
 	for _, v := range stf {
@@ -76,5 +77,5 @@ func (f *FileStorage) Load() (map[string]string, error) {
 }
 
 func (f *FileStorage) Delete() error {
-	return os.Remove(f.file.Name())
+	return fmt.Errorf("delete: %w", os.Remove(f.file.Name()))
 }
