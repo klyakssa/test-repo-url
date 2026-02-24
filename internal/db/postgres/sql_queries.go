@@ -25,7 +25,7 @@ func (s *PostgresStorage) Shorten(ctx context.Context, url string) (string, erro
 	_, err = s.ExecContext(ctx, "INSERT INTO shorten_url (uuid, short_url, original_url) VALUES ($1, $2, $3)", uuid, shurl, url)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation && strings.Contains(pgErr.ColumnName, "original_url") {
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation && strings.Contains(pgErr.ConstraintName, "shorten_url_original_url_key") {
 			shurl, err2 := s.selectShortURLByOriginalURL(url, ctx)
 			if err2 != nil {
 				return "", err2
