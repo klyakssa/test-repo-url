@@ -15,8 +15,8 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
-	"github.com/klyakssa/test-repo-url/internal/service/fileservice"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
+	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,10 +64,10 @@ func TestMainHandler(t *testing.T) {
 		},
 	}
 	log := logger.NewLogger()
-	fs := fileservice.New(testConfig)
-	uuid := uuidservice.New()
 
-	hand := handler.NewMyHandler(testConfig, log, fs, uuid)
+	userService := uuidservice.New(uuidstorage.New(testConfig))
+
+	hand := handler.NewMyHandler(log, userService)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -130,7 +130,10 @@ func TestNewShortenHandler(t *testing.T) {
 		},
 	}
 	log := logger.NewLogger()
-	hand := handler.NewMyHandler(testConfig, log, fileservice.New(testConfig), uuidservice.New())
+
+	userService := uuidservice.New(uuidstorage.New(testConfig))
+
+	hand := handler.NewMyHandler(log, userService)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})

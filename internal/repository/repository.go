@@ -1,15 +1,19 @@
 package repository
 
-type Repository interface {
-	Load() map[string]string
-	Save(map[string]string) error
-	Shorten(string) (string, error)
-	Unshorten(string) (string, error)
+import "context"
+
+type helpers interface {
+	Close() error
 }
 
-type FileStorageRepository interface {
-	Save(map[string]string) error
-	Load() (map[string]string, error)
-	Delete() error
-	Close() error
+type Repository interface {
+	UserService
+	helpers
+}
+
+type UserService interface {
+	helpers
+	Shorten(context.Context, string) (string, error)
+	Unshorten(context.Context, string) (string, error)
+	PingContext(context.Context) error
 }

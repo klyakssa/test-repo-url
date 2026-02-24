@@ -1,43 +1,33 @@
 package uuidservice
 
 import (
+	"context"
+
 	"github.com/klyakssa/test-repo-url/internal/repository"
-	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 )
 
 type UUIDService struct {
 	repo repository.Repository
 }
 
-func New() *UUIDService {
+func New(repo repository.Repository) *UUIDService {
 	return &UUIDService{
-		repo: uuidstorage.New(),
+		repo: repo,
 	}
 }
 
-func (s *UUIDService) Shorten(url string) (string, error) {
-	shurl, err := s.repo.Shorten(url)
-	if err != nil {
-		return "", err
-	}
-	return shurl, nil
+func (s *UUIDService) Shorten(ctx context.Context, url string) (string, error) {
+	return s.repo.Shorten(ctx, url)
 }
 
-func (s *UUIDService) Unshorten(shurl string) (string, error) {
-	url, err := s.repo.Unshorten(shurl)
-	if err != nil {
-		return "", err
-	}
-	return url, nil
+func (s *UUIDService) Unshorten(ctx context.Context, uuid string) (string, error) {
+	return s.repo.Unshorten(ctx, uuid)
 }
 
-func (s *UUIDService) Load() map[string]string {
-	return s.repo.Load()
+func (s *UUIDService) Close() error {
+	return s.repo.Close()
 }
 
-func (s *UUIDService) Save(data map[string]string) error {
-	if data == nil {
-		return nil
-	}
-	return s.repo.Save(data)
+func (s *UUIDService) PingContext(ctx context.Context) error {
+	return s.repo.PingContext(ctx)
 }

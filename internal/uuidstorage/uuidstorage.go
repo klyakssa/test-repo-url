@@ -1,44 +1,107 @@
 package uuidstorage
 
 import (
+	"context"
+	"fmt"
+	urls "net/url"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
+	"github.com/klyakssa/test-repo-url/internal/filestorage"
 )
 
 type UUIDStorage struct {
-	mu sync.RWMutex
-	bd map[string]string
+	mu  sync.RWMutex
+	bd  map[string]string
+	fs  *filestorage.FileStorage
+	cfg *config.Config
 }
 
-func New() *UUIDStorage {
-	return &UUIDStorage{
-		bd: make(map[string]string),
-		mu: sync.RWMutex{},
+func New(cfg *config.Config) *UUIDStorage {
+	fs, err := filestorage.New(cfg.File.Path)
+	if err != nil {
+		panic(err)
+	}
+	uuidstorage := &UUIDStorage{
+		bd:  make(map[string]string),
+		mu:  sync.RWMutex{},
+		fs:  fs,
+		cfg: cfg,
+	}
+	data, err := fs.Load()
+	if err != nil {
+		panic(err)
+	}
+	return uuidstorage.save(data)
+}
+
+func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
+	done := make(chan struct{})
+	errChan := make(chan error, 1)
+	var result string
+
+	go func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		shurl := uuid.NewString()
+		s.bd[shurl] = url
+		var err error
+		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
+		if err != nil {
+			errChan <- fmt.Errorf("join path: %w", err)
+		}
+
+		close(done)
+	}()
+
+	select {
+	case err := <-errChan:
+		return "", err
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-done:
+		return result, nil
 	}
 }
 
-func (s *UUIDStorage) Shorten(url string) (string, error) {
+func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error) {
+	done := make(chan struct{})
+	var result string
+
+	go func() {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		result = s.bd[uuid]
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-done:
+		return result, nil
+	}
+}
+
+func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	shurl := uuid.NewString()
-	s.bd[shurl] = url
-	return shurl, nil
+	if data != nil {
+		s.bd = data
+	}
+	return s
 }
 
-func (s *UUIDStorage) Unshorten(shurl string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.bd[shurl], nil
+func (s *UUIDStorage) Close() error {
+	if err := s.fs.Save(s.bd); err != nil {
+		return err
+	}
+	return s.fs.Close()
 }
 
-func (s *UUIDStorage) Load() map[string]string {
-	return s.bd
-}
-
-func (s *UUIDStorage) Save(data map[string]string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.bd = data
-	return nil
+func (s *UUIDStorage) PingContext(ctx context.Context) error {
+	return postgres.ErrConnection
 }
