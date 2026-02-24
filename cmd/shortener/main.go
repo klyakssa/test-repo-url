@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 
@@ -27,6 +28,9 @@ func main() {
 	db, err := postgres.NewPostgresStorage(config, log)
 	if err != nil {
 		log.Error(err)
+		if !errors.Is(err, postgres.ErrNoConnectionString) {
+			panic(err)
+		}
 	}
 
 	var userService *uuidservice.UUIDService

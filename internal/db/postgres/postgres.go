@@ -18,8 +18,9 @@ import (
 var embedMigrations embed.FS
 
 var (
-	ErrConnection = errors.New("connection error")
-	ErrMigration  = errors.New("migration error")
+	ErrConnection         = errors.New("connection error")
+	ErrMigration          = errors.New("migration error")
+	ErrNoConnectionString = errors.New("no connection string")
 )
 
 type PostgresStorage struct {
@@ -47,6 +48,9 @@ func (s *PostgresStorage) Close() error {
 }
 
 func connectPostgres(cfg *config.Config) (*sqlx.DB, error) {
+	if cfg.PostDB.ConnString == "" {
+		return nil, ErrNoConnectionString
+	}
 	dbpool, err := pgxpool.New(context.Background(), cfg.PostDB.ConnString)
 	if err != nil {
 		return nil, fmt.Errorf("pgxpool: %w", err)
