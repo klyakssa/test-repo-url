@@ -45,12 +45,12 @@ func main() {
 	r.Middleware(h.GzipMiddleware())
 	r.Middleware(h.ErrorMiddleware())
 
-	r.GET("/ping", h.PingPostgresHandler)
-	r.GET("/:uuid", h.UnshortenHandler)
-	r.POST("/", h.ShortenHandler)
+	r.SGET("/ping", h.PingPostgresHandler)
+	r.SGET("/:uuid", h.UnshortenHandler)
+	r.SPOST("/", h.ShortenHandler)
 	v1 := r.Group("/api/shorten")
-	v1.POST("", h.NewShortenHandler)
-	v1.POST("/batch", h.BatchHandler)
+	v1.SPOST("", h.NewShortenHandler)
+	v1.SPOST("/batch", h.BatchHandler)
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {

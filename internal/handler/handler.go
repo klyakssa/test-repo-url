@@ -30,6 +30,12 @@ func NewMyHandler(l *logger.MyLogger, uuid repository.UserService) *MyHandlerStr
 	}
 }
 
+func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+	}
+}
+
 func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
