@@ -35,9 +35,9 @@ func main() {
 
 	var userService *uuidservice.UUIDService
 	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(config))
+		userService = uuidservice.New(uuidstorage.New(config), log)
 	} else {
-		userService = uuidservice.New(db)
+		userService = uuidservice.New(db, log)
 	}
 
 	h := handler.NewMyHandler(log, userService)
@@ -49,10 +49,12 @@ func main() {
 	r.SGET("/ping", h.PingPostgresHandler)
 	r.SGET("/:uuid", h.UnshortenHandler)
 	r.SPOST("/", h.ShortenHandler)
-	r.GET("/api/user/urls", h.GetUrlsHandler())
 	v1 := r.Group("/api/shorten")
 	v1.SPOST("", h.NewShortenHandler)
 	v1.SPOST("/batch", h.BatchHandler)
+	v2 := r.Group("/api/user")
+	v2.GET("/urls", h.GetUrlsHandler())
+	v2.DELETE("/urls", h.DeleteUrlsHandler())
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {

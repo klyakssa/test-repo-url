@@ -65,7 +65,7 @@ func TestMainHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	userService := uuidservice.New(uuidstorage.New(testConfig))
+	userService := uuidservice.New(uuidstorage.New(testConfig), log)
 
 	hand := handler.NewMyHandler(log, userService)
 	for _, test := range tests {
@@ -131,7 +131,7 @@ func TestNewShortenHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	userService := uuidservice.New(uuidstorage.New(testConfig))
+	userService := uuidservice.New(uuidstorage.New(testConfig), log)
 
 	hand := handler.NewMyHandler(log, userService)
 	for _, tt := range tests {

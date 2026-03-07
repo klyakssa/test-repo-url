@@ -60,4 +60,10 @@ type Storage struct {
 	ShortURL    string `db:"short_url"`
 	OriginalURL string `db:"original_url"`
 	UserID      string `db:"user_id"`
+	IsDeleted   bool   `db:"is_deleted"`
+}
+
+type DeleteTask struct {
+	UserID string
+	UUIDs  []string
 }

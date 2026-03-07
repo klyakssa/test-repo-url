@@ -2,19 +2,65 @@ package uuidservice
 
 import (
 	"context"
+	"time"
 
+	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/mapper"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
 )
 
 type UUIDService struct {
-	repo repository.Repository
+	repo       repository.Repository
+	deleteChan chan model.DeleteTask
+	logger     *logger.MyLogger
 }
 
-func New(repo repository.Repository) *UUIDService {
-	return &UUIDService{
-		repo: repo,
+func New(repo repository.Repository, logger *logger.MyLogger) *UUIDService {
+	service := &UUIDService{
+		repo:       repo,
+		deleteChan: make(chan model.DeleteTask, 100),
+		logger:     logger,
+	}
+	go service.deleteWorker(context.Background())
+	return service
+}
+
+func (s *UUIDService) deleteWorker(ctx context.Context) {
+	batch := []model.DeleteTask{}
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case task := <-s.deleteChan:
+			batch = append(batch, task)
+			if len(batch) >= 50 {
+				s.flush(ctx, batch)
+				batch = nil
+			}
+		case <-ticker.C:
+			if len(batch) > 0 {
+				s.flush(ctx, batch)
+				batch = nil
+			}
+		}
+	}
+}
+
+func (s *UUIDService) flush(ctx context.Context, batch []model.DeleteTask) {
+	userURLs := make(map[string][]string)
+
+	for _, task := range batch {
+		userURLs[task.UserID] = append(userURLs[task.UserID], task.UUIDs...)
+	}
+
+	for userID, uuids := range userURLs {
+		err := s.repo.DeleteUrlsByUserID(ctx, userID, uuids)
+		if err != nil {
+			s.logger.Error(err)
+		}
 	}
 }
 
@@ -38,6 +84,17 @@ func (s *UUIDService) GetUrlsByUserID(ctx context.Context, userID string) ([]mod
 		return nil, err
 	}
 	return mapper.ToUrlsResponse(urls), nil
+}
+
+func (s *UUIDService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	select {
+	case s.deleteChan <- model.DeleteTask{
+		UserID: userID,
+		UUIDs:  uuids,
+	}:
+	default:
+		s.repo.DeleteUrlsByUserID(ctx, userID, uuids)
+	}
 }
 
 func (s *UUIDService) Close() error {

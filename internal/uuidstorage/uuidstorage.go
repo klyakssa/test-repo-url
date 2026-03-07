@@ -114,6 +114,33 @@ func (s *UUIDStorage) GetUrlsByUserID(ctx context.Context, userID string) ([]mod
 	}
 }
 
+func (s *UUIDStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) error {
+	done := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		for _, uuid := range uuids {
+			if _, ok := s.bd[userID][uuid]; !ok {
+				errChan <- fmt.Errorf("uuid %q not found for user %q", uuid, userID)
+				return
+			}
+			delete(s.bd[userID], uuid)
+		}
+		close(done)
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+		return nil
+	}
+}
+
 func (s *UUIDStorage) save(data map[string]map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -158,7 +158,10 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("ShortenHandler")
 
-	h.Logger.Debug("ShortenHandler", zap.String("user_id", r.Context().Value("user_id").(string)))
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		userID = "unknown"
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -173,7 +176,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: string(body), UserID: r.Context().Value("user_id").(string)})
+	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: string(body), UserID: userID})
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
@@ -187,6 +190,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	h.Logger.Debug("ShortenHandler",
 		zap.String("from_body", string(body)),
 		zap.String("to_short", shrt),
+		zap.String("user_id", userID),
 	)
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -196,11 +200,21 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
+
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		userID = "unknown"
+	}
+
 	lng, err := h.service.Unshorten(r.Context(), model.GetShortURLInput{
-		UserID: r.Context().Value("user_id").(string),
+		UserID: userID,
 		UUID:   r.URL.Path[1:],
 	})
 	if err != nil {
+		if errors.Is(err, postgres.ErrURLDeleted) {
+			http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
+			return
+		}
 		h.Logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -209,7 +223,13 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 	h.Logger.Debug("UnshortenHandler",
 		zap.String("from_url", r.URL.Path[1:]),
 		zap.String("to_original", lng),
+		zap.String("user_id", userID),
 	)
+
+	if lng == "" {
+		http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
+		return
+	}
 
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
@@ -239,7 +259,12 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: req.URL, UserID: r.Context().Value("user_id").(string)})
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		userID = "unknown"
+	}
+
+	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: req.URL, UserID: userID})
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
@@ -253,6 +278,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	h.Logger.Debug("NewShortenHandler",
 		zap.String("from_url", req.URL),
 		zap.String("to_short", shrt),
+		zap.String("user_id", userID),
 	)
 
 	data, err := json.Marshal(model.ShortenResponse{
@@ -345,5 +371,19 @@ func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, urls)
+	}
+}
+
+func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.Logger.Debug("DeleteUrlsHandler")
+		var uuids []string
+		if err := c.BindJSON(&uuids); err != nil {
+			h.Logger.Error(err)
+			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			return
+		}
+		h.service.DeleteUrlsByUserID(c.Request.Context(), c.Request.Context().Value("user_id").(string), uuids)
+		c.Writer.WriteHeader(http.StatusAccepted)
 	}
 }

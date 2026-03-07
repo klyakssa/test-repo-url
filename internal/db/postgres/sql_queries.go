@@ -15,6 +15,7 @@ import (
 
 var (
 	ErrInsertUniqueViolation = errors.New("insert unique violation")
+	ErrURLDeleted            = errors.New("URL is deleted")
 )
 
 func (s *PostgresStorage) Shorten(ctx context.Context, url model.Storage) (string, error) {
@@ -39,9 +40,13 @@ func (s *PostgresStorage) Shorten(ctx context.Context, url model.Storage) (strin
 }
 
 func (s *PostgresStorage) Unshorten(ctx context.Context, uuid model.Storage) (url string, err error) {
-	err = s.QueryRowContext(ctx, "SELECT original_url FROM shorten_url WHERE uuid = $1", uuid.UUID).Scan(&url)
+	var isDeleted bool
+	err = s.QueryRowContext(ctx, "SELECT original_url, is_deleted FROM shorten_url WHERE uuid = $1", uuid.UUID).Scan(&url, &isDeleted)
 	if err != nil {
 		return "", fmt.Errorf("unshorten: %w", err)
+	}
+	if isDeleted {
+		return "", fmt.Errorf("unshorten: %w: URL with uuid %q is deleted", ErrURLDeleted, uuid.UUID)
 	}
 	return url, nil
 }
@@ -53,6 +58,14 @@ func (s *PostgresStorage) GetUrlsByUserID(ctx context.Context, userID string) ([
 		return nil, fmt.Errorf("get urls by user id: %w", err)
 	}
 	return urls, nil
+}
+
+func (s *PostgresStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) error {
+	_, err := s.ExecContext(ctx, "UPDATE shorten_url SET is_deleted = true WHERE user_id = $1 AND uuid = ANY($2)", userID, uuids)
+	if err != nil {
+		return fmt.Errorf("delete urls by user id: %w", err)
+	}
+	return nil
 }
 
 func (s *PostgresStorage) selectShortURLByOriginalURL(url string, ctx context.Context) (shrtURL string, err error) {
