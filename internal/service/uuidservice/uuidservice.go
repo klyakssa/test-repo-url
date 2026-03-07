@@ -3,6 +3,8 @@ package uuidservice
 import (
 	"context"
 
+	"github.com/klyakssa/test-repo-url/internal/mapper"
+	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
 )
 
@@ -16,12 +18,26 @@ func New(repo repository.Repository) *UUIDService {
 	}
 }
 
-func (s *UUIDService) Shorten(ctx context.Context, url string) (string, error) {
-	return s.repo.Shorten(ctx, url)
+func (s *UUIDService) Shorten(ctx context.Context, url model.CreateShortURLInput) (string, error) {
+	return s.repo.Shorten(ctx, model.Storage{
+		OriginalURL: url.OriginalURL,
+		UserID:      url.UserID,
+	})
 }
 
-func (s *UUIDService) Unshorten(ctx context.Context, uuid string) (string, error) {
-	return s.repo.Unshorten(ctx, uuid)
+func (s *UUIDService) Unshorten(ctx context.Context, uuid model.GetShortURLInput) (string, error) {
+	return s.repo.Unshorten(ctx, model.Storage{
+		UUID:   uuid.UUID,
+		UserID: uuid.UserID,
+	})
+}
+
+func (s *UUIDService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	urls, err := s.repo.GetUrlsByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToUrlsResponse(urls), nil
 }
 
 func (s *UUIDService) Close() error {

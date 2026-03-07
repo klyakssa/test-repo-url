@@ -42,12 +42,14 @@ func main() {
 
 	h := handler.NewMyHandler(log, userService)
 	r.Middleware(log.WithLogging())
+	r.Middleware(h.SecretMiddleware())
 	r.Middleware(h.GzipMiddleware())
 	r.Middleware(h.ErrorMiddleware())
 
 	r.SGET("/ping", h.PingPostgresHandler)
 	r.SGET("/:uuid", h.UnshortenHandler)
 	r.SPOST("/", h.ShortenHandler)
+	r.GET("/api/user/urls", h.GetUrlsHandler())
 	v1 := r.Group("/api/shorten")
 	v1.SPOST("", h.NewShortenHandler)
 	v1.SPOST("/batch", h.BatchHandler)

@@ -10,11 +10,12 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/filestorage"
+	"github.com/klyakssa/test-repo-url/internal/model"
 )
 
 type UUIDStorage struct {
 	mu  sync.RWMutex
-	bd  map[string]string
+	bd  map[string]map[string]string
 	fs  *filestorage.FileStorage
 	cfg *config.Config
 }
@@ -25,7 +26,7 @@ func New(cfg *config.Config) *UUIDStorage {
 		panic(err)
 	}
 	uuidstorage := &UUIDStorage{
-		bd:  make(map[string]string),
+		bd:  make(map[string]map[string]string),
 		mu:  sync.RWMutex{},
 		fs:  fs,
 		cfg: cfg,
@@ -37,7 +38,7 @@ func New(cfg *config.Config) *UUIDStorage {
 	return uuidstorage.save(data)
 }
 
-func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
+func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, error) {
 	done := make(chan struct{})
 	errChan := make(chan error, 1)
 	var result string
@@ -46,10 +47,13 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 
-		shurl := uuid.NewString()
-		s.bd[shurl] = url
+		url.ShortURL = uuid.NewString()
+		if _, ok := s.bd[url.UserID]; !ok {
+			s.bd[url.UserID] = make(map[string]string)
+		}
+		s.bd[url.UserID][url.ShortURL] = url.OriginalURL
 		var err error
-		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
+		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
 		if err != nil {
 			errChan <- fmt.Errorf("join path: %w", err)
 		}
@@ -67,14 +71,14 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 	}
 }
 
-func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error) {
+func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string, error) {
 	done := make(chan struct{})
 	var result string
 
 	go func() {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		result = s.bd[uuid]
+		result = s.bd[uuid.UserID][uuid.UUID]
 		close(done)
 	}()
 
@@ -86,7 +90,31 @@ func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error
 	}
 }
 
-func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
+func (s *UUIDStorage) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsStorage, error) {
+	done := make(chan struct{})
+	var result []model.UrlsStorage
+
+	go func() {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		for shortURL, originalURL := range s.bd[userID] {
+			result = append(result, model.UrlsStorage{
+				ShortURL:    shortURL,
+				OriginalURL: originalURL,
+			})
+		}
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-done:
+		return result, nil
+	}
+}
+
+func (s *UUIDStorage) save(data map[string]map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if data != nil {

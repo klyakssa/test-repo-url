@@ -27,15 +27,17 @@ func (f *FileStorage) Close() error {
 	return f.file.Close()
 }
 
-func (f *FileStorage) Save(data map[string]string) error {
+func (f *FileStorage) Save(data map[string]map[string]string) error {
 	if len(data) == 0 {
 		return nil
 	}
 	i := 1
 	var stf []model.FileStorageData
-	for k, v := range data {
-		stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: k, OUrl: v})
-		i++
+	for userID, urls := range data {
+		for s, o := range urls {
+			stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: s, OUrl: o, UserID: userID})
+			i++
+		}
 	}
 	dt, err := json.Marshal(stf)
 	if err != nil {
@@ -53,10 +55,13 @@ func (f *FileStorage) Save(data map[string]string) error {
 	}
 
 	_, err = f.file.Write(dt)
-	return fmt.Errorf("write: %w", err)
+	if err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	return nil
 }
 
-func (f *FileStorage) Load() (map[string]string, error) {
+func (f *FileStorage) Load() (map[string]map[string]string, error) {
 	data, err := io.ReadAll(f.file)
 	if err != nil {
 		panic(err)
@@ -69,9 +74,12 @@ func (f *FileStorage) Load() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal: %w", err)
 	}
-	m := make(map[string]string)
+	m := make(map[string]map[string]string)
 	for _, v := range stf {
-		m[v.SUrl] = v.OUrl
+		if m[v.UserID] == nil {
+			m[v.UserID] = make(map[string]string)
+		}
+		m[v.UserID][v.SUrl] = v.OUrl
 	}
 	return m, nil
 }
