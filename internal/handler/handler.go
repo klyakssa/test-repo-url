@@ -160,7 +160,8 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 }
 
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("ShortenHandler")
+	h.Logger.Debug("ShortenHandler",
+		zap.Any("headers", r.Header))
 
 	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
@@ -204,6 +205,8 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Debug("UnshortenHandler",
+		zap.Any("headers", r.Header))
 
 	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
@@ -230,10 +233,10 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 		zap.String("user_id", userID),
 	)
 
-	if lng == "" {
-		http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
-		return
-	}
+	// if lng == "" {
+	// 	http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
+	// 	return
+	// }
 
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
@@ -301,7 +304,9 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("PingPostgresHandler")
+	h.Logger.Debug("PingPostgresHandler",
+		zap.Any("headers", r.Header))
+
 	if err := h.service.PingContext(r.Context()); err != nil {
 		h.Logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -311,7 +316,9 @@ func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("BatchHandler")
+	h.Logger.Debug("BatchHandler",
+		zap.Any("headers", r.Header))
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
@@ -360,7 +367,8 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h.Logger.Debug("UrlsHandler")
+		h.Logger.Debug("GetUrlsHandler",
+			zap.Any("headers", c.Request.Header))
 
 		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), c.Request.Context().Value(userIDKey).(string))
 		if err != nil {
@@ -380,7 +388,8 @@ func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 
 func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h.Logger.Debug("DeleteUrlsHandler")
+		h.Logger.Debug("DeleteUrlsHandler",
+			zap.Any("headers", c.Request.Header))
 		var uuids []string
 		if err := c.BindJSON(&uuids); err != nil {
 			h.Logger.Error(err)
