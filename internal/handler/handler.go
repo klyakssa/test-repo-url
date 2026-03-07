@@ -24,6 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
+type contextKey string
+
+const userIDKey contextKey = userIDKey
+
 type MyHandlerStruct struct {
 	Logger  *logger.MyLogger
 	service repository.UserService
@@ -68,7 +72,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 					HttpOnly: true,
 					SameSite: http.SameSiteLaxMode,
 				})
-				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "user_id", string(uuid)))
+				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(uuid)))
 				c.Next()
 				return
 			}
@@ -103,7 +107,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 		}
 
 		h.Logger.Debug("SecretMiddleware", zap.String("user_id", string(userID)))
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "user_id", string(userID)))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(userID)))
 		c.Next()
 	}
 }
@@ -158,7 +162,7 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("ShortenHandler")
 
-	userID, ok := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -201,7 +205,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID, ok := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -259,7 +263,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value(userIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -330,7 +334,7 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	var resp []model.BatchShortenResponse
 	for _, v := range req {
-		shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: v.OUrl, UserID: r.Context().Value("user_id").(string)})
+		shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: v.OUrl, UserID: r.Context().Value(userIDKey).(string)})
 		if err != nil {
 			h.Logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -358,7 +362,7 @@ func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.Logger.Debug("UrlsHandler")
 
-		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), c.Request.Context().Value("user_id").(string))
+		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), c.Request.Context().Value(userIDKey).(string))
 		if err != nil {
 			h.Logger.Error(err)
 			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -383,7 +387,7 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
 			return
 		}
-		h.service.DeleteUrlsByUserID(c.Request.Context(), c.Request.Context().Value("user_id").(string), uuids)
+		h.service.DeleteUrlsByUserID(c.Request.Context(), c.Request.Context().Value(userIDKey).(string), uuids)
 		c.Writer.WriteHeader(http.StatusAccepted)
 	}
 }

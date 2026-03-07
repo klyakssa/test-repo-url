@@ -32,7 +32,7 @@ func (s *PostgresStorage) Shorten(ctx context.Context, url model.Storage) (strin
 			if err2 != nil {
 				return "", err2
 			}
-			return shurl, fmt.Errorf("%w: URL %q already exists (%w)", ErrInsertUniqueViolation, url, err)
+			return shurl, fmt.Errorf("%w: URL %q already exists (%w)", ErrInsertUniqueViolation, url.OriginalURL, err)
 		}
 		return "", err
 	}
