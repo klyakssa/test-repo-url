@@ -26,7 +26,7 @@ import (
 
 type contextKey string
 
-const userIDKey contextKey = userIDKey
+const userIDKey contextKey = "user_id"
 
 type MyHandlerStruct struct {
 	Logger  *logger.MyLogger
