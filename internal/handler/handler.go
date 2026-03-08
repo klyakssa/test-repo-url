@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
@@ -31,12 +32,14 @@ const userIDKey contextKey = "user_id"
 type MyHandlerStruct struct {
 	Logger  *logger.MyLogger
 	service repository.UserService
+	cfg     *config.Config
 }
 
-func NewMyHandler(l *logger.MyLogger, uuid repository.UserService) *MyHandlerStruct {
+func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		Logger:  l,
 		service: uuid,
+		cfg:     cfg,
 	}
 }
 
@@ -44,7 +47,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.Logger.Debug("SecretMiddleware")
 
-		key := sha256.Sum256([]byte("secret"))
+		key := sha256.Sum256([]byte(h.cfg.WebConfig.Secret))
 
 		aesblock, err := aes.NewCipher(key[:])
 		if err != nil {
@@ -88,7 +91,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 			})
-			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			c.Next()
 			return
 		}
 
@@ -102,7 +105,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 			})
-			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			c.Next()
 			return
 		}
 
@@ -233,11 +236,6 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 		zap.String("user_id", userID),
 	)
 
-	// if lng == "" {
-	// 	http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
-	// 	return
-	// }
-
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -339,9 +337,15 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	var resp []model.BatchShortenResponse
 	for _, v := range req {
-		shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: v.OUrl, UserID: r.Context().Value(userIDKey).(string)})
+		shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: v.OUrl, UserID: userID})
 		if err != nil {
 			h.Logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -370,7 +374,13 @@ func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 		h.Logger.Debug("GetUrlsHandler",
 			zap.Any("headers", c.Request.Header))
 
-		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), c.Request.Context().Value(userIDKey).(string))
+		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		if !ok {
+			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), userID)
 		if err != nil {
 			h.Logger.Error(err)
 			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -396,7 +406,14 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
 			return
 		}
-		h.service.DeleteUrlsByUserID(c.Request.Context(), c.Request.Context().Value(userIDKey).(string), uuids)
+
+		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		if !ok {
+			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		h.service.DeleteUrlsByUserID(c.Request.Context(), userID, uuids)
 		c.Writer.WriteHeader(http.StatusAccepted)
 	}
 }

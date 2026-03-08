@@ -16,13 +16,13 @@ type UUIDService struct {
 	logger     *logger.MyLogger
 }
 
-func New(repo repository.Repository, logger *logger.MyLogger) *UUIDService {
+func New(ctx context.Context, repo repository.Repository, logger *logger.MyLogger) *UUIDService {
 	service := &UUIDService{
 		repo:       repo,
 		deleteChan: make(chan model.DeleteTask, 100),
 		logger:     logger,
 	}
-	go service.deleteWorker(context.Background())
+	go service.deleteWorker(ctx)
 	return service
 }
 
@@ -45,6 +45,13 @@ func (s *UUIDService) deleteWorker(ctx context.Context) {
 				s.flush(ctx, batch)
 				batch = nil
 			}
+		case <-ctx.Done():
+			if len(batch) > 0 {
+				flushCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				s.flush(flushCtx, batch)
+			}
+			return
 		}
 	}
 }

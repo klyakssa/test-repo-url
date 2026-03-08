@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -65,9 +66,10 @@ func TestMainHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	userService := uuidservice.New(uuidstorage.New(testConfig), log)
+	ctx := context.Background()
+	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.NewMyHandler(log, userService)
+	hand := handler.NewMyHandler(log, userService, testConfig)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -131,9 +133,10 @@ func TestNewShortenHandler(t *testing.T) {
 	}
 	log := logger.NewLogger()
 
-	userService := uuidservice.New(uuidstorage.New(testConfig), log)
+	ctx := context.Background()
+	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.NewMyHandler(log, userService)
+	hand := handler.NewMyHandler(log, userService, testConfig)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})

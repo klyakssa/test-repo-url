@@ -35,12 +35,12 @@ func main() {
 
 	var userService *uuidservice.UUIDService
 	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(config), log)
+		userService = uuidservice.New(ctx, uuidstorage.New(config), log)
 	} else {
-		userService = uuidservice.New(db, log)
+		userService = uuidservice.New(ctx, db, log)
 	}
 
-	h := handler.NewMyHandler(log, userService)
+	h := handler.NewMyHandler(log, userService, config)
 	r.Middleware(log.WithLogging())
 	r.Middleware(h.SecretMiddleware())
 	r.Middleware(h.GzipMiddleware())
