@@ -15,7 +15,7 @@ import (
 
 type UUIDStorage struct {
 	mu  sync.RWMutex
-	bd  map[string]map[string]string
+	bd  map[string]string
 	fs  *filestorage.FileStorage
 	cfg *config.Config
 }
@@ -26,7 +26,7 @@ func New(cfg *config.Config) *UUIDStorage {
 		panic(err)
 	}
 	uuidstorage := &UUIDStorage{
-		bd:  make(map[string]map[string]string),
+		bd:  make(map[string]string),
 		mu:  sync.RWMutex{},
 		fs:  fs,
 		cfg: cfg,
@@ -48,10 +48,9 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, e
 		defer s.mu.Unlock()
 
 		url.ShortURL = uuid.NewString()
-		if _, ok := s.bd[url.UserID]; !ok {
-			s.bd[url.UserID] = make(map[string]string)
-		}
-		s.bd[url.UserID][url.ShortURL] = url.OriginalURL
+
+		s.bd[url.ShortURL] = url.OriginalURL
+
 		var err error
 		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
 		if err != nil {
@@ -78,7 +77,7 @@ func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string
 	go func() {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		result = s.bd[uuid.UserID][uuid.UUID]
+		result = s.bd[uuid.UUID]
 		close(done)
 	}()
 
@@ -91,57 +90,14 @@ func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string
 }
 
 func (s *UUIDStorage) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsStorage, error) {
-	done := make(chan struct{})
-	var result []model.UrlsStorage
-
-	go func() {
-		s.mu.RLock()
-		defer s.mu.RUnlock()
-		for shortURL, originalURL := range s.bd[userID] {
-			result = append(result, model.UrlsStorage{
-				ShortURL:    shortURL,
-				OriginalURL: originalURL,
-			})
-		}
-		close(done)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-done:
-		return result, nil
-	}
+	return nil, nil
 }
 
 func (s *UUIDStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) error {
-	done := make(chan struct{})
-	errChan := make(chan error, 1)
-
-	go func() {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		for _, uuid := range uuids {
-			if _, ok := s.bd[userID][uuid]; !ok {
-				errChan <- fmt.Errorf("uuid %q not found for user %q", uuid, userID)
-				return
-			}
-			delete(s.bd[userID], uuid)
-		}
-		close(done)
-	}()
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-done:
-		return nil
-	}
+	return nil
 }
 
-func (s *UUIDStorage) save(data map[string]map[string]string) *UUIDStorage {
+func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if data != nil {
