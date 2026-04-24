@@ -202,13 +202,19 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		zap.String("from_body", string(body)),
 		zap.String("to_short", shrt),
 		zap.String("user_id", userID),
+		zap.Int64("start_time", r.Context().Value("start_time").(int64)),
 	)
 
 	go h.subscriber.Subscribe(&model.AuditEntry{
 		Timestamp: r.Context().Value("start_time").(int64),
 		Action:    "shorten",
-		UserID:    userID,
-		URL:       string(body),
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: string(body),
 	})
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -248,9 +254,14 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 
 	go h.subscriber.Subscribe(&model.AuditEntry{
 		Timestamp: r.Context().Value("start_time").(int64),
-		Action:    "unshorten",
-		UserID:    userID,
-		URL:       lng,
+		Action:    "follow",
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: lng,
 	})
 
 	w.Header().Add("Location", lng)
@@ -315,8 +326,13 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	go h.subscriber.Subscribe(&model.AuditEntry{
 		Timestamp: r.Context().Value("start_time").(int64),
 		Action:    "shorten",
-		UserID:    userID,
-		URL:       req.URL,
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: req.URL,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
