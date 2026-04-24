@@ -20,6 +20,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
+	"github.com/klyakssa/test-repo-url/pkg/audit"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
 	"github.com/klyakssa/test-repo-url/pkg/httperror"
 	"go.uber.org/zap"
@@ -30,16 +31,18 @@ type contextKey string
 const userIDKey contextKey = "user_id"
 
 type MyHandlerStruct struct {
-	Logger  *logger.MyLogger
-	service repository.UserService
-	cfg     *config.Config
+	Logger     *logger.MyLogger
+	service    repository.UserService
+	cfg        *config.Config
+	subscriber *audit.Audit
 }
 
 func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
 	return &MyHandlerStruct{
-		Logger:  l,
-		service: uuid,
-		cfg:     cfg,
+		Logger:     l,
+		service:    uuid,
+		cfg:        cfg,
+		subscriber: audit.NewAudit(cfg.Audit.AuditFile, cfg.Audit.AuditURL),
 	}
 }
 
@@ -201,6 +204,13 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		zap.String("user_id", userID),
 	)
 
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Timestamp: r.Context().Value("start_time").(int64),
+		Action:    "shorten",
+		UserID:    userID,
+		URL:       string(body),
+	})
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len([]byte(shrt))))
 	w.WriteHeader(http.StatusCreated)
@@ -235,6 +245,13 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 		zap.String("to_original", lng),
 		zap.String("user_id", userID),
 	)
+
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Timestamp: r.Context().Value("start_time").(int64),
+		Action:    "unshorten",
+		UserID:    userID,
+		URL:       lng,
+	})
 
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
@@ -294,6 +311,13 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Timestamp: r.Context().Value("start_time").(int64),
+		Action:    "shorten",
+		UserID:    userID,
+		URL:       req.URL,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))

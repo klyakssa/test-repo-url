@@ -19,9 +19,15 @@ type DBConfig struct {
 	ConnString string `env:"DATABASE_DSN" envDefault:""`
 }
 
+type AuditConfig struct {
+	AuditFile string `env:"AUDIT_FILE" envDefault:""`
+	AuditURL  string `env:"AUDIT_URL" envDefault:""`
+}
+
 type Config struct {
 	WebConfig WebConfig
 	File      FileStorage
+	Audit     AuditConfig
 	PostDB    DBConfig
 }
 
@@ -31,12 +37,15 @@ func InitFlagConfig() *Config {
 	env.Parse(&cfg.WebConfig)
 	env.Parse(&cfg.File)
 	env.Parse(&cfg.PostDB)
+	env.Parse(&cfg.Audit)
 
 	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
 	flagBaseURL := pflag.StringP("base", "b", "http://localhost:8080", "base url")
 	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
 	flagConnString := pflag.StringP("postgresdb", "d", "", "database connection string") //-d=postgres://postgres:11@localhost:5432/test_prac?sslmode=disable -d=postgres://test:11@localhost:5432/prac?sslmode=disable
 	flagSecret := pflag.StringP("secret", "s", "GASGIOPHFAISGFAHBKWAYFGS", "secret key")
+	flagAuditFile := pflag.StringP("audit-file", "af", "", "audit log file path")
+	flagAuditURL := pflag.StringP("audit-url", "au", "", "audit log server url")
 
 	pflag.Parse()
 
@@ -58,6 +67,14 @@ func InitFlagConfig() *Config {
 
 	if cfg.WebConfig.Secret == "" {
 		cfg.WebConfig.Secret = *flagSecret
+	}
+
+	if cfg.Audit.AuditFile == "" {
+		cfg.Audit.AuditFile = *flagAuditFile
+	}
+
+	if cfg.Audit.AuditURL == "" {
+		cfg.Audit.AuditURL = *flagAuditURL
 	}
 
 	return &cfg
