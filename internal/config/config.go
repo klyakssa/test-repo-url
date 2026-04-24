@@ -44,8 +44,8 @@ func InitFlagConfig() *Config {
 	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
 	flagConnString := pflag.StringP("postgresdb", "d", "", "database connection string") //-d=postgres://postgres:11@localhost:5432/test_prac?sslmode=disable -d=postgres://test:11@localhost:5432/prac?sslmode=disable
 	flagSecret := pflag.StringP("secret", "s", "GASGIOPHFAISGFAHBKWAYFGS", "secret key")
-	flagAuditFile := pflag.StringP("audit-file", "af", "", "audit log file path")
-	flagAuditURL := pflag.StringP("audit-url", "au", "", "audit log server url")
+	flagAuditFile := pflag.StringP("audit-file", "l", "", "audit log file path")
+	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
 
 	pflag.Parse()
 
