@@ -30,6 +30,7 @@ func NewAudit(filePath, serverURL string) *Audit {
 }
 
 func (a *Audit) Subscribe(audit *model.AuditEntry) {
+	audit.Timestamp = time.Now().Unix()
 	if a.file != nil {
 		jsonData, err := json.Marshal(audit)
 		if err != nil {

@@ -41,7 +41,7 @@ func main() {
 	}
 
 	h := handler.NewMyHandler(log, userService, config)
-	r.Middleware(log.WithLogging())
+	r.Middleware(h.WithLogging())
 	r.Middleware(h.SecretMiddleware())
 	r.Middleware(h.GzipMiddleware())
 	r.Middleware(h.ErrorMiddleware())

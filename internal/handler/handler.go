@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -29,6 +30,7 @@ import (
 type contextKey string
 
 const userIDKey contextKey = "user_id"
+const start_time contextKey = "start_time"
 
 type MyHandlerStruct struct {
 	Logger     *logger.MyLogger
@@ -43,6 +45,16 @@ func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.C
 		service:    uuid,
 		cfg:        cfg,
 		subscriber: audit.NewAudit(cfg.Audit.AuditFile, cfg.Audit.AuditURL),
+	}
+}
+
+func (h *MyHandlerStruct) WithLogging() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+
+		c.Next()
+		h.Logger.Infow("request", "method", c.Request.Method, "path", c.Request.URL.Path, "duration", time.Since(start).Seconds())
+		h.Logger.Infow("response", "status", c.Writer.Status(), "size", c.Writer.Size())
 	}
 }
 
@@ -202,12 +214,10 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		zap.String("from_body", string(body)),
 		zap.String("to_short", shrt),
 		zap.String("user_id", userID),
-		zap.Int64("start_time", r.Context().Value("start_time").(int64)),
 	)
 
 	go h.subscriber.Subscribe(&model.AuditEntry{
-		Timestamp: r.Context().Value("start_time").(int64),
-		Action:    "shorten",
+		Action: "shorten",
 		UserID: func() string {
 			if ok {
 				return userID
@@ -253,8 +263,7 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 	)
 
 	go h.subscriber.Subscribe(&model.AuditEntry{
-		Timestamp: r.Context().Value("start_time").(int64),
-		Action:    "follow",
+		Action: "follow",
 		UserID: func() string {
 			if ok {
 				return userID
@@ -324,8 +333,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	go h.subscriber.Subscribe(&model.AuditEntry{
-		Timestamp: r.Context().Value("start_time").(int64),
-		Action:    "shorten",
+		Action: "shorten",
 		UserID: func() string {
 			if ok {
 				return userID
