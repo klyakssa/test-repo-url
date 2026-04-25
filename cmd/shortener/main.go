@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 

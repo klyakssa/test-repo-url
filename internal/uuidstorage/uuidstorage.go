@@ -3,7 +3,6 @@ package uuidstorage
 import (
 	"context"
 	"fmt"
-	urls "net/url"
 	"sync"
 
 	"github.com/google/uuid"
@@ -51,11 +50,12 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, e
 
 		s.bd[url.ShortURL] = url.OriginalURL
 
-		var err error
-		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
-		if err != nil {
-			errChan <- fmt.Errorf("join path: %w", err)
-		}
+		// var err error
+		// result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
+		// if err != nil {
+		// 	errChan <- fmt.Errorf("join path: %w", err)
+		// }
+		result = fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, url.ShortURL)
 
 		close(done)
 	}()

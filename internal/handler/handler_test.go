@@ -20,6 +20,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 var testConfig *config.Config
@@ -173,5 +174,29 @@ func TestNewShortenHandler(t *testing.T) {
 
 			defer res2.Body.Close()
 		})
+	}
+}
+
+func BenchmarkMainHandler(b *testing.B) {
+	log := &logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(), // NoOp логгер
+	}
+
+	ctx := context.Background()
+	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
+
+	hand := handler.NewMyHandler(log, userService, testConfig)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("1"))
+		request.Header.Set("Content-Type", "text/plain")
+		w := httptest.NewRecorder()
+		hand.ShortenHandler(w, request)
+
+		if w.Code != http.StatusCreated {
+			b.Fatalf("unexpected status: %d", w.Code)
+		}
 	}
 }
