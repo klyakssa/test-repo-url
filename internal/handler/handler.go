@@ -30,7 +30,6 @@ import (
 type contextKey string
 
 const userIDKey contextKey = "user_id"
-const start_time contextKey = "start_time"
 
 type MyHandlerStruct struct {
 	Logger     *logger.MyLogger
