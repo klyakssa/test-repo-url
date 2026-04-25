@@ -34,7 +34,6 @@ func (r *RouterGroup) GET(pattern string, handler gin.HandlerFunc) {
 	r.RouterGroup.GET(pattern, handler)
 }
 
-
 func (r *RouterGroup) Middleware(middleware ...gin.HandlerFunc) {
 	r.RouterGroup.Use(middleware...)
 }
