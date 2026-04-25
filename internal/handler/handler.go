@@ -1,6 +1,11 @@
 package handler
 
 import (
+	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -9,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
@@ -18,15 +25,93 @@ import (
 	"go.uber.org/zap"
 )
 
+type contextKey string
+
+const userIDKey contextKey = "user_id"
+
 type MyHandlerStruct struct {
 	Logger  *logger.MyLogger
 	service repository.UserService
+	cfg     *config.Config
 }
 
-func NewMyHandler(l *logger.MyLogger, uuid repository.UserService) *MyHandlerStruct {
+func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		Logger:  l,
 		service: uuid,
+		cfg:     cfg,
+	}
+}
+
+func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.Logger.Debug("SecretMiddleware")
+
+		key := sha256.Sum256([]byte(h.cfg.WebConfig.Secret))
+
+		aesblock, err := aes.NewCipher(key[:])
+		if err != nil {
+			h.Logger.Error(err)
+			return
+		}
+
+		aesgcm, err := cipher.NewGCM(aesblock)
+		if err != nil {
+			h.Logger.Error(err)
+			return
+		}
+
+		nonce := key[len(key)-aesgcm.NonceSize():]
+
+		uuid := uuid.NewString()
+
+		cookie, err := c.Cookie("shorten_user_id")
+		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				c.SetCookieData(&http.Cookie{
+					Name:     "shorten_user_id",
+					Value:    hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil)),
+					Path:     "/",
+					HttpOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				})
+				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(uuid)))
+				c.Next()
+				return
+			}
+		}
+
+		cook, err := hex.DecodeString(cookie)
+		if err != nil {
+			h.Logger.Debug(err)
+			c.SetCookieData(&http.Cookie{
+				Name:     "shorten_user_id",
+				Value:    hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+			c.Next()
+			return
+		}
+
+		userID, err := aesgcm.Open(nil, nonce, cook, nil)
+		if err != nil {
+			h.Logger.Debug(err)
+			c.SetCookieData(&http.Cookie{
+				Name:     "shorten_user_id",
+				Value:    hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+			c.Next()
+			return
+		}
+
+		h.Logger.Debug("SecretMiddleware", zap.String("user_id", string(userID)))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(userID)))
+		c.Next()
 	}
 }
 
@@ -78,7 +163,13 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 }
 
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("ShortenHandler")
+	h.Logger.Debug("ShortenHandler",
+		zap.Any("headers", r.Header))
+
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		userID = "unknown"
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -93,7 +184,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	shrt, err := h.service.Shorten(r.Context(), string(body))
+	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: string(body), UserID: userID})
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
@@ -107,6 +198,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	h.Logger.Debug("ShortenHandler",
 		zap.String("from_body", string(body)),
 		zap.String("to_short", shrt),
+		zap.String("user_id", userID),
 	)
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -116,8 +208,23 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
-	lng, err := h.service.Unshorten(r.Context(), r.URL.Path[1:])
+	h.Logger.Debug("UnshortenHandler",
+		zap.Any("headers", r.Header))
+
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		userID = "unknown"
+	}
+
+	lng, err := h.service.Unshorten(r.Context(), model.GetShortURLInput{
+		UserID: userID,
+		UUID:   r.URL.Path[1:],
+	})
 	if err != nil {
+		if errors.Is(err, postgres.ErrURLDeleted) {
+			http.Error(w, http.StatusText(http.StatusGone), http.StatusGone)
+			return
+		}
 		h.Logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -126,6 +233,7 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 	h.Logger.Debug("UnshortenHandler",
 		zap.String("from_url", r.URL.Path[1:]),
 		zap.String("to_original", lng),
+		zap.String("user_id", userID),
 	)
 
 	w.Header().Add("Location", lng)
@@ -156,7 +264,12 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	shrt, err := h.service.Shorten(r.Context(), req.URL)
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		userID = "unknown"
+	}
+
+	shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: req.URL, UserID: userID})
 	if err != nil {
 		if rw, ok := w.(*httperror.ErrorsWriter); ok {
 			rw.AddError(err)
@@ -170,6 +283,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	h.Logger.Debug("NewShortenHandler",
 		zap.String("from_url", req.URL),
 		zap.String("to_short", shrt),
+		zap.String("user_id", userID),
 	)
 
 	data, err := json.Marshal(model.ShortenResponse{
@@ -188,7 +302,9 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("PingPostgresHandler")
+	h.Logger.Debug("PingPostgresHandler",
+		zap.Any("headers", r.Header))
+
 	if err := h.service.PingContext(r.Context()); err != nil {
 		h.Logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -198,7 +314,9 @@ func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("BatchHandler")
+	h.Logger.Debug("BatchHandler",
+		zap.Any("headers", r.Header))
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
@@ -219,9 +337,15 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := r.Context().Value(userIDKey).(string)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	var resp []model.BatchShortenResponse
 	for _, v := range req {
-		shrt, err := h.service.Shorten(r.Context(), v.OUrl)
+		shrt, err := h.service.Shorten(r.Context(), model.CreateShortURLInput{OriginalURL: v.OUrl, UserID: userID})
 		if err != nil {
 			h.Logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -243,4 +367,53 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(data)
+}
+
+func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.Logger.Debug("GetUrlsHandler",
+			zap.Any("headers", c.Request.Header))
+
+		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		if !ok {
+			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		urls, err := h.service.GetUrlsByUserID(c.Request.Context(), userID)
+		if err != nil {
+			h.Logger.Error(err)
+			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if len(urls) == 0 {
+			http.Error(c.Writer, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+			return
+		}
+
+		c.JSON(http.StatusOK, urls)
+	}
+}
+
+func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.Logger.Debug("DeleteUrlsHandler",
+			zap.Any("headers", c.Request.Header))
+		var uuids []string
+		if err := c.BindJSON(&uuids); err != nil {
+			h.Logger.Error(err)
+			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			return
+		}
+
+		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		if !ok {
+			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		h.service.DeleteUrlsByUserID(c.Request.Context(), userID, uuids)
+		c.Writer.WriteHeader(http.StatusAccepted)
+	}
 }

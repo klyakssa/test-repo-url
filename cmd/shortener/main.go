@@ -35,22 +35,26 @@ func main() {
 
 	var userService *uuidservice.UUIDService
 	if err != nil {
-		userService = uuidservice.New(uuidstorage.New(config))
+		userService = uuidservice.New(ctx, uuidstorage.New(config), log)
 	} else {
-		userService = uuidservice.New(db)
+		userService = uuidservice.New(ctx, db, log)
 	}
 
-	h := handler.NewMyHandler(log, userService)
+	h := handler.NewMyHandler(log, userService, config)
 	r.Middleware(log.WithLogging())
+	r.Middleware(h.SecretMiddleware())
 	r.Middleware(h.GzipMiddleware())
 	r.Middleware(h.ErrorMiddleware())
 
-	r.GET("/ping", h.PingPostgresHandler)
-	r.GET("/:uuid", h.UnshortenHandler)
-	r.POST("/", h.ShortenHandler)
+	r.SGET("/ping", h.PingPostgresHandler)
+	r.SGET("/:uuid", h.UnshortenHandler)
+	r.SPOST("/", h.ShortenHandler)
 	v1 := r.Group("/api/shorten")
-	v1.POST("", h.NewShortenHandler)
-	v1.POST("/batch", h.BatchHandler)
+	v1.SPOST("", h.NewShortenHandler)
+	v1.SPOST("/batch", h.BatchHandler)
+	v2 := r.Group("/api/user")
+	v2.GET("/urls", h.GetUrlsHandler())
+	v2.DELETE("/urls", h.DeleteUrlsHandler())
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {

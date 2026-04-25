@@ -33,8 +33,8 @@ func (f *FileStorage) Save(data map[string]string) error {
 	}
 	i := 1
 	var stf []model.FileStorageData
-	for k, v := range data {
-		stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: k, OUrl: v})
+	for shortURL, originalURL := range data {
+		stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: shortURL, OUrl: originalURL})
 		i++
 	}
 	dt, err := json.Marshal(stf)
@@ -53,7 +53,10 @@ func (f *FileStorage) Save(data map[string]string) error {
 	}
 
 	_, err = f.file.Write(dt)
-	return fmt.Errorf("write: %w", err)
+	if err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	return nil
 }
 
 func (f *FileStorage) Load() (map[string]string, error) {

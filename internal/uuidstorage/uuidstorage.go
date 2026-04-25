@@ -10,6 +10,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/filestorage"
+	"github.com/klyakssa/test-repo-url/internal/model"
 )
 
 type UUIDStorage struct {
@@ -37,7 +38,7 @@ func New(cfg *config.Config) *UUIDStorage {
 	return uuidstorage.save(data)
 }
 
-func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
+func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, error) {
 	done := make(chan struct{})
 	errChan := make(chan error, 1)
 	var result string
@@ -46,10 +47,12 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 
-		shurl := uuid.NewString()
-		s.bd[shurl] = url
+		url.ShortURL = uuid.NewString()
+
+		s.bd[url.ShortURL] = url.OriginalURL
+
 		var err error
-		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, shurl)
+		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
 		if err != nil {
 			errChan <- fmt.Errorf("join path: %w", err)
 		}
@@ -67,14 +70,14 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url string) (string, error) {
 	}
 }
 
-func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error) {
+func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string, error) {
 	done := make(chan struct{})
 	var result string
 
 	go func() {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		result = s.bd[uuid]
+		result = s.bd[uuid.UUID]
 		close(done)
 	}()
 
@@ -84,6 +87,14 @@ func (s *UUIDStorage) Unshorten(ctx context.Context, uuid string) (string, error
 	case <-done:
 		return result, nil
 	}
+}
+
+func (s *UUIDStorage) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsStorage, error) {
+	return nil, nil
+}
+
+func (s *UUIDStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) error {
+	return nil
 }
 
 func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
