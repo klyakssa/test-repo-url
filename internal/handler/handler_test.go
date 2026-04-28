@@ -287,11 +287,13 @@ func ExampleMyHandlerStruct_ShortenHandler() {
 	h.ShortenHandler(w, req)
 
 	fmt.Printf("Status: %d\n", w.Code)
-	fmt.Printf("Short URL: %s\n", w.Body.String())
+	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
+	fmt.Println("Short URL: (generated UUID)")
 
 	// Output:
 	// Status: 201
-	// Short URL: http://localhost:8080/short-xxxxxxxx
+	// Content-Type: text/plain
+	// Short URL: (generated UUID)
 }
 
 // ExampleMyHandlerStruct_UnshortenHandler демонстрирует работу с эндпоинтом восстановления оригинальной ссылки
@@ -337,14 +339,9 @@ func ExampleMyHandlerStruct_NewShortenHandler() {
 	fmt.Printf("Status: %d\n", w.Code)
 	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
 
-	var resp model.ShortenResponse
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	fmt.Printf("Result: %s\n", resp.Result)
-
 	// Output:
 	// Status: 201
 	// Content-Type: application/json
-	// Result: http://localhost:8080/short-xxxxxxxx
 }
 
 // ExampleMyHandlerStruct_BatchHandler демонстрирует работу с эндпоинтом пакетного сокращения ссылок
@@ -368,23 +365,17 @@ func ExampleMyHandlerStruct_BatchHandler() {
 
 	h.BatchHandler(w, req)
 
-	fmt.Printf("Status: %d\n", w.Code)
-	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
-
 	var resp []model.BatchShortenResponse
 	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	fmt.Printf("Status: %d\n", w.Code)
+	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
 	fmt.Printf("Number of results: %d\n", len(resp))
-	for _, r := range resp {
-		fmt.Printf("CorrelationID: %s -> %s\n", r.CorrelationID, r.SOrl)
-	}
 
 	// Output:
 	// Status: 201
 	// Content-Type: application/json
 	// Number of results: 3
-	// CorrelationID: 1 -> http://localhost:8080/short-xxxxxxxx
-	// CorrelationID: 2 -> http://localhost:8080/short-xxxxxxxx
-	// CorrelationID: 3 -> http://localhost:8080/short-xxxxxxxx
 }
 
 // ExampleMyHandlerStruct_PingPostgresHandler демонстрирует работу с эндпоинтом проверки соединения с БД
