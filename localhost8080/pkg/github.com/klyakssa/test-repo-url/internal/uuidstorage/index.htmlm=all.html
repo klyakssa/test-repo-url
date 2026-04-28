@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>uuidstorage - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="../../../../../../lib/godoc/jquery.js" defer></script>
+
+
+
+<script src="../../../../../../lib/godoc/playground.js" defer></script>
+
+<script>var goVersion = "go1.22.2";</script>
+<script src="../../../../../../lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="http://localhost:8080/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="http://localhost:8080/pkg/">GoDoc</a></div>
+<a href="index.html%3Fm=all.html#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="http://localhost:8080/search">
+<div id="menu">
+
+<a id="playgroundButton" href="https://play.golang.org/" title="Show Go Playground">Play</a>
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+<div id="playground" class="play">
+	<div class="input"><textarea class="code" spellcheck="false">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, 世界")
+}</textarea></div>
+	<div class="output"></div>
+	<div class="buttons">
+		<a class="run" title="Run this code [shift-enter]">Run</a>
+		<a class="fmt" title="Format this code">Format</a>
+		<a class="share" title="Share this code">Share</a>
+	</div>
+</div>
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package uuidstorage
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/klyakssa/test-repo-url/internal/uuidstorage"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="index.html%3Fm=all.html#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="index.html%3Fm=all.html#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="index.html%3Fm=all.html#UUIDStorage">type UUIDStorage</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#New">func New(cfg *config.Config) *UUIDStorage</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.Close">func (s *UUIDStorage) Close() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.DeleteUrlsByUserID">func (s *UUIDStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.GetUrlsByUserID">func (s *UUIDStorage) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsStorage, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.PingContext">func (s *UUIDStorage) PingContext(ctx context.Context) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.Shorten">func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.Unshorten">func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#UUIDStorage.save">func (s *UUIDStorage) save(data map[string]string) *UUIDStorage</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go">uuidstorage.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="UUIDStorage">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=307:425#L5">UUIDStorage</a>
+				<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type UUIDStorage struct {
+<span id="UUIDStorage.mu"></span>    mu  <a href="http://localhost:8080/pkg/sync/">sync</a>.<a href="http://localhost:8080/pkg/sync/#RWMutex">RWMutex</a>
+<span id="UUIDStorage.bd"></span>    bd  map[<a href="http://localhost:8080/pkg/builtin/#string">string</a>]<a href="http://localhost:8080/pkg/builtin/#string">string</a>
+<span id="UUIDStorage.fs"></span>    fs  *<a href="../filestorage/index.html">filestorage</a>.<a href="../filestorage/index.html#FileStorage">FileStorage</a>
+<span id="UUIDStorage.cfg"></span>    cfg *<a href="../config/index.html">config</a>.<a href="../config/index.html#Config">Config</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=427:468#L12">New</a>
+					<a class="permalink" href="index.html%3Fm=all.html#New">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func New(cfg *<a href="../config/index.html">config</a>.<a href="../config/index.html#Config">Config</a>) *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a></pre>
+				
+				
+				
+			
+
+			
+				
+				<h3 id="UUIDStorage.Close">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=2160:2195#L99">Close</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.Close">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) Close() <a href="http://localhost:8080/pkg/builtin/#error">error</a></pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.DeleteUrlsByUserID">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=1896:1994#L86">DeleteUrlsByUserID</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.DeleteUrlsByUserID">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) DeleteUrlsByUserID(ctx <a href="http://localhost:8080/pkg/context/">context</a>.<a href="http://localhost:8080/pkg/context/#Context">Context</a>, userID <a href="http://localhost:8080/pkg/builtin/#string">string</a>, uuids []<a href="http://localhost:8080/pkg/builtin/#string">string</a>) <a href="http://localhost:8080/pkg/builtin/#error">error</a></pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.GetUrlsByUserID">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=1771:1873#L82">GetUrlsByUserID</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.GetUrlsByUserID">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) GetUrlsByUserID(ctx <a href="http://localhost:8080/pkg/context/">context</a>.<a href="http://localhost:8080/pkg/context/#Context">Context</a>, userID <a href="http://localhost:8080/pkg/builtin/#string">string</a>) ([]<a href="../model/index.html">model</a>.<a href="../model/index.html#UrlsStorage">UrlsStorage</a>, <a href="http://localhost:8080/pkg/builtin/#error">error</a>)</pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.PingContext">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=2279:2339#L106">PingContext</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.PingContext">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) PingContext(ctx <a href="http://localhost:8080/pkg/context/">context</a>.<a href="http://localhost:8080/pkg/context/#Context">Context</a>) <a href="http://localhost:8080/pkg/builtin/#error">error</a></pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.Shorten">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=749:834#L30">Shorten</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.Shorten">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) Shorten(ctx <a href="http://localhost:8080/pkg/context/">context</a>.<a href="http://localhost:8080/pkg/context/#Context">Context</a>, url <a href="../model/index.html">model</a>.<a href="../model/index.html#Storage">Storage</a>) (<a href="http://localhost:8080/pkg/builtin/#string">string</a>, <a href="http://localhost:8080/pkg/builtin/#error">error</a>)</pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.Unshorten">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=1439:1527#L63">Unshorten</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.Unshorten">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) Unshorten(ctx <a href="http://localhost:8080/pkg/context/">context</a>.<a href="http://localhost:8080/pkg/context/#Context">Context</a>, uuid <a href="../model/index.html">model</a>.<a href="../model/index.html#Storage">Storage</a>) (<a href="http://localhost:8080/pkg/builtin/#string">string</a>, <a href="http://localhost:8080/pkg/builtin/#error">error</a>)</pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="UUIDStorage.save">func (*UUIDStorage) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/uuidstorage/uuidstorage.go?s=2012:2075#L90">save</a>
+					<a class="permalink" href="index.html%3Fm=all.html#UUIDStorage.save">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a>) save(data map[<a href="http://localhost:8080/pkg/builtin/#string">string</a>]<a href="http://localhost:8080/pkg/builtin/#string">string</a>) *<a href="index.html%3Fm=all.html#UUIDStorage">UUIDStorage</a></pre>
+				
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.22.2.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="http://localhost:8080/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

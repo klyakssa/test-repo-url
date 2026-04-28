@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>handler - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="../../../../../../lib/godoc/jquery.js" defer></script>
+
+
+
+<script src="../../../../../../lib/godoc/playground.js" defer></script>
+
+<script>var goVersion = "go1.22.2";</script>
+<script src="../../../../../../lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="http://localhost:8080/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="http://localhost:8080/pkg/">GoDoc</a></div>
+<a href="index.html%3Fm=all.html#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="http://localhost:8080/search">
+<div id="menu">
+
+<a id="playgroundButton" href="https://play.golang.org/" title="Show Go Playground">Play</a>
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+<div id="playground" class="play">
+	<div class="input"><textarea class="code" spellcheck="false">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, 世界")
+}</textarea></div>
+	<div class="output"></div>
+	<div class="buttons">
+		<a class="run" title="Run this code [shift-enter]">Run</a>
+		<a class="fmt" title="Format this code">Format</a>
+		<a class="share" title="Share this code">Share</a>
+	</div>
+</div>
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package handler
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/klyakssa/test-repo-url/internal/handler"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="index.html%3Fm=all.html#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="index.html%3Fm=all.html#pkg-index" class="indexLink">Index</a></dd>
+			
+				<dd><a href="index.html%3Fm=all.html#pkg-examples" class="examplesLink">Examples</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="index.html%3Fm=all.html#MyHandlerStruct">type MyHandlerStruct</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#NewMyHandler">func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.BatchHandler">func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.DeleteUrlsHandler">func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.ErrorMiddleware">func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.GetUrlsHandler">func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.GzipMiddleware">func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.NewShortenHandler">func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.PingPostgresHandler">func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.SecretMiddleware">func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.ShortenHandler">func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.UnshortenHandler">func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html%3Fm=all.html#MyHandlerStruct.WithLogging">func (h *MyHandlerStruct) WithLogging() gin.HandlerFunc</a></dd>
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#contextKey">type contextKey</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+		<div id="pkg-examples">
+			<h3>Examples</h3>
+			<div class="js-expandAll expandAll collapsed">(Expand All)</div>
+			<dl>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_BatchHandler">MyHandlerStruct.BatchHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_DeleteUrlsHandler">MyHandlerStruct.DeleteUrlsHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_GetUrlsHandler">MyHandlerStruct.GetUrlsHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_NewShortenHandler">MyHandlerStruct.NewShortenHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_PingPostgresHandler">MyHandlerStruct.PingPostgresHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_ShortenHandler">MyHandlerStruct.ShortenHandler</a></dd>
+			
+			<dd><a class="exampleLink" href="index.html%3Fm=all.html#example_MyHandlerStruct_UnshortenHandler">MyHandlerStruct.UnshortenHandler</a></dd>
+			
+			</dl>
+		</div>
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go">handler.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="MyHandlerStruct">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=835:1089#L25">MyHandlerStruct</a>
+				<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MyHandlerStruct is a struct for handler
+
+			<pre>type MyHandlerStruct struct {
+<span id="MyHandlerStruct.Logger"></span>    Logger     *<a href="../logger/index.html">logger</a>.<a href="../logger/index.html#MyLogger">MyLogger</a>       <span class="comment">// is a logger</span>
+<span id="MyHandlerStruct.service"></span>    service    <a href="../repository/index.html">repository</a>.<a href="../repository/index.html#UserService">UserService</a> <span class="comment">// is a service</span>
+<span id="MyHandlerStruct.cfg"></span>    cfg        *<a href="../config/index.html">config</a>.<a href="../config/index.html#Config">Config</a>         <span class="comment">// is a config</span>
+<span id="MyHandlerStruct.subscriber"></span>    subscriber *<a href="../../pkg/audit/index.html">audit</a>.<a href="../../pkg/audit/index.html#Audit">Audit</a>           <span class="comment">// is variable for audit output</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMyHandler">func <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=1127:1230#L33">NewMyHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#NewMyHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewMyHandler(l *<a href="../logger/index.html">logger</a>.<a href="../logger/index.html#MyLogger">MyLogger</a>, uuid <a href="../repository/index.html">repository</a>.<a href="../repository/index.html#UserService">UserService</a>, cfg *<a href="../config/index.html">config</a>.<a href="../config/index.html#Config">Config</a>) *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a></pre>
+				<p>NewMyHandler is a constructor
+
+				
+				
+			
+
+			
+				
+				<h3 id="MyHandlerStruct.BatchHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=10294:10372#L368">BatchHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.BatchHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) BatchHandler(w <a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#Request">Request</a>)</pre>
+				<p>BatchHandler is a handler for batch shorten
+Body: original urls application/json
+
+				
+				<div id="example_MyHandlerStruct_BatchHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_BatchHandler демонстрирует работу с эндпоинтом пакетного сокращения ссылок
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;bytes&#34;
+	&#34;context&#34;
+	&#34;encoding/json&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	h, _ := setupTestHandler()
+
+	reqBody := []model.BatchShortenRequest{
+		{CorrelationID: &#34;1&#34;, OUrl: &#34;https://example.com/first&#34;},
+		{CorrelationID: &#34;2&#34;, OUrl: &#34;https://example.com/second&#34;},
+		{CorrelationID: &#34;3&#34;, OUrl: &#34;https://example.com/third&#34;},
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest(http.MethodPost, &#34;/api/batch&#34;, bytes.NewReader(jsonBody))
+	req.Header.Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+
+	ctx := context.WithValue(req.Context(), handler.UserIDKey, &#34;test-user&#34;)
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	h.BatchHandler(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+	fmt.Printf(&#34;Content-Type: %s\n&#34;, w.Header().Get(&#34;Content-Type&#34;))
+
+	var resp []model.BatchShortenResponse
+	json.Unmarshal(w.Body.Bytes(), &amp;resp)
+	fmt.Printf(&#34;Number of results: %d\n&#34;, len(resp))
+	for _, r := range resp {
+		fmt.Printf(&#34;CorrelationID: %s -&gt; %s\n&#34;, r.CorrelationID, r.SOrl)
+	}
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 201
+Content-Type: application/json
+Number of results: 3
+CorrelationID: 1 -&gt; http://localhost:8080/short-xxxxxxxx
+CorrelationID: 2 -&gt; http://localhost:8080/short-xxxxxxxx
+CorrelationID: 3 -&gt; http://localhost:8080/short-xxxxxxxx
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.DeleteUrlsHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=12899:12960#L455">DeleteUrlsHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.DeleteUrlsHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) DeleteUrlsHandler() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>DeleteUrlsHandler is a handler for delete urls by user
+Body: uuids text/plain
+
+				
+				<div id="example_MyHandlerStruct_DeleteUrlsHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_DeleteUrlsHandler демонстрирует работу с эндпоинтом удаления ссылок
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;bytes&#34;
+	&#34;context&#34;
+	&#34;encoding/json&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/gin-gonic/gin&#34;
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	short1, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: &#34;https://example.com/to-delete-1&#34;,
+		UserID:      &#34;test-user&#34;,
+	})
+	short2, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: &#34;https://example.com/to-delete-2&#34;,
+		UserID:      &#34;test-user&#34;,
+	})
+
+	uuid1 := strings.TrimPrefix(short1, &#34;http://localhost:8080/&#34;)
+	uuid2 := strings.TrimPrefix(short2, &#34;http://localhost:8080/&#34;)
+
+	r.DELETE(&#34;/api/user/urls&#34;, h.SecretMiddleware(), h.DeleteUrlsHandler())
+
+	deleteBody := []string{uuid1, uuid2}
+	jsonBody, _ := json.Marshal(deleteBody)
+
+	req := httptest.NewRequest(http.MethodDelete, &#34;/api/user/urls&#34;, bytes.NewReader(jsonBody))
+	req.Header.Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 202
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.ErrorMiddleware">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=4516:4575#L155">ErrorMiddleware</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.ErrorMiddleware">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) ErrorMiddleware() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>ErrorMiddleware is a middleware for errors
+
+				
+				
+				
+			
+				
+				<h3 id="MyHandlerStruct.GetUrlsHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=12049:12107#L426">GetUrlsHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.GetUrlsHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) GetUrlsHandler() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>GetUrlsHandler is a handler for get urls
+Response: application/json original urls by user
+
+				
+				<div id="example_MyHandlerStruct_GetUrlsHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_GetUrlsHandler демонстрирует работу с эндпоинтом получения списка URL пользователя
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;context&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/gin-gonic/gin&#34;
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: &#34;https://example.com/url1&#34;,
+		UserID:      &#34;test-user&#34;,
+	})
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: &#34;https://example.com/url2&#34;,
+		UserID:      &#34;test-user&#34;,
+	})
+
+	r.GET(&#34;/api/user/urls&#34;, h.SecretMiddleware(), h.GetUrlsHandler())
+
+	req := httptest.NewRequest(http.MethodGet, &#34;/api/user/urls&#34;, nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 200
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.GzipMiddleware">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=3757:3815#L127">GzipMiddleware</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.GzipMiddleware">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) GzipMiddleware() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>GzipMiddleware is a middleware for gzip
+
+				
+				
+				
+			
+				
+				<h3 id="MyHandlerStruct.NewShortenHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=7843:7926#L281">NewShortenHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.NewShortenHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) NewShortenHandler(w <a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#Request">Request</a>)</pre>
+				<p>NewShortenHandler is a handler for shorten link
+Body: original url application/json
+
+				
+				<div id="example_MyHandlerStruct_NewShortenHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_NewShortenHandler демонстрирует работу с эндпоинтом сокращения ссылки (application/json)
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;bytes&#34;
+	&#34;context&#34;
+	&#34;encoding/json&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	h, _ := setupTestHandler()
+
+	reqBody := model.ShortenRequest{
+		URL: &#34;https://api.example.com/long/endpoint/with/many/segments&#34;,
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest(http.MethodPost, &#34;/api/shorten&#34;, bytes.NewReader(jsonBody))
+	req.Header.Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+
+	w := httptest.NewRecorder()
+
+	h.NewShortenHandler(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+	fmt.Printf(&#34;Content-Type: %s\n&#34;, w.Header().Get(&#34;Content-Type&#34;))
+
+	var resp model.ShortenResponse
+	json.Unmarshal(w.Body.Bytes(), &amp;resp)
+	fmt.Printf(&#34;Result: %s\n&#34;, resp.Result)
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 201
+Content-Type: application/json
+Result: http://localhost:8080/short-xxxxxxxx
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.PingPostgresHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=9809:9894#L354">PingPostgresHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.PingPostgresHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) PingPostgresHandler(w <a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#Request">Request</a>)</pre>
+				<p>PingPostgresHandler is a handler for ping postgres
+
+				
+				<div id="example_MyHandlerStruct_PingPostgresHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_PingPostgresHandler демонстрирует работу с эндпоинтом проверки соединения с БД
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;context&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	h, _ := setupTestHandler()
+
+	req := httptest.NewRequest(http.MethodGet, &#34;/ping&#34;, nil)
+	w := httptest.NewRecorder()
+
+	h.PingPostgresHandler(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 200
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.SecretMiddleware">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=1838:1898#L54">SecretMiddleware</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.SecretMiddleware">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) SecretMiddleware() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>SecretMiddleware is a middleware for auth
+
+				
+				
+				
+			
+				
+				<h3 id="MyHandlerStruct.ShortenHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=5119:5199#L177">ShortenHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.ShortenHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) ShortenHandler(w <a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#Request">Request</a>)</pre>
+				<p>ShortenHandler is a handler for shorten link
+Body: original url text/plain
+
+				
+				<div id="example_MyHandlerStruct_ShortenHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_ShortenHandler демонстрирует работу с эндпоинтом сокращения ссылки (text/plain)
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;context&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	h, _ := setupTestHandler()
+
+	// Создание запроса с телом в формате text/plain
+	body := strings.NewReader(&#34;https://example.com/very/long/url/that/needs/shortening&#34;)
+	req := httptest.NewRequest(http.MethodPost, &#34;/&#34;, body)
+	req.Header.Set(&#34;Content-Type&#34;, &#34;text/plain&#34;)
+
+	w := httptest.NewRecorder()
+
+	h.ShortenHandler(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+	fmt.Printf(&#34;Short URL: %s\n&#34;, w.Body.String())
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 201
+Short URL: http://localhost:8080/short-xxxxxxxx
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.UnshortenHandler">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=6677:6759#L235">UnshortenHandler</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.UnshortenHandler">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) UnshortenHandler(w <a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="http://localhost:8080/pkg/net/http/">http</a>.<a href="http://localhost:8080/pkg/net/http/#Request">Request</a>)</pre>
+				<p>UnshortenHandler is a handler for unshorten link
+Param: uuid
+
+				
+				<div id="example_MyHandlerStruct_UnshortenHandler" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		<p>ExampleMyHandlerStruct_UnshortenHandler демонстрирует работу с эндпоинтом восстановления оригинальной ссылки
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code" spellcheck="false">package main
+
+import (
+	&#34;context&#34;
+	&#34;fmt&#34;
+	&#34;net/http&#34;
+	&#34;net/http/httptest&#34;
+	&#34;strings&#34;
+
+	&#34;github.com/google/uuid&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/config&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/handler&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/logger&#34;
+	&#34;github.com/klyakssa/test-repo-url/internal/model&#34;
+	&#34;go.uber.org/zap&#34;
+)
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &amp;mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := &#34;short-&#34; + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return &#34;http://localhost:8080/&#34; + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, &#34;http://localhost:8080/&#34;)
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return &#34;&#34;, fmt.Errorf(&#34;url not found&#34;)
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &amp;logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &amp;config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: &#34;localhost:8080&#34;,
+			BaseURL:  &#34;http://localhost:8080&#34;,
+			Secret:   &#34;test-secret-key&#34;,
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+func main() {
+	h, mockSvc := setupTestHandler()
+
+	shortURL, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: &#34;https://example.com/original/url&#34;,
+		UserID:      &#34;test-user&#34;,
+	})
+
+	uuid := strings.TrimPrefix(shortURL, &#34;http://localhost:8080/&#34;)
+
+	req := httptest.NewRequest(http.MethodGet, &#34;/&#34;+uuid, nil)
+	w := httptest.NewRecorder()
+
+	h.UnshortenHandler(w, req)
+
+	fmt.Printf(&#34;Status: %d\n&#34;, w.Code)
+	fmt.Printf(&#34;Location: %s\n&#34;, w.Header().Get(&#34;Location&#34;))
+
+}
+</textarea></div>
+				<div class="output"><pre>Status: 307
+Location: https://example.com/original/url
+</pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					<a class="share" title="Share this code">Share</a>
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="MyHandlerStruct.WithLogging">func (*MyHandlerStruct) <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=1445:1500#L43">WithLogging</a>
+					<a class="permalink" href="index.html%3Fm=all.html#MyHandlerStruct.WithLogging">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="index.html%3Fm=all.html#MyHandlerStruct">MyHandlerStruct</a>) WithLogging() <a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/">gin</a>.<a href="http://localhost:8080/pkg/github.com/gin-gonic/gin/#HandlerFunc">HandlerFunc</a></pre>
+				<p>WithLogging is a middleware for logging
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="contextKey">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/handler/handler.go?s=699:721#L20">contextKey</a>
+				<a class="permalink" href="index.html%3Fm=all.html#contextKey">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type contextKey <a href="http://localhost:8080/pkg/builtin/#string">string</a></pre>
+
+			
+				
+				<pre>const <span id="UserIDKey">UserIDKey</span> contextKey = &#34;user_id&#34; <span class="comment">// is a key for user id</span>
+</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.22.2.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="http://localhost:8080/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>
