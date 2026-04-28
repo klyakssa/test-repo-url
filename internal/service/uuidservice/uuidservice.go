@@ -10,12 +10,14 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/repository"
 )
 
+// UUIDService is a service for shortening, unshortening and deleting URLs
 type UUIDService struct {
-	repo       repository.Repository
-	deleteChan chan model.DeleteTask
-	logger     *logger.MyLogger
+	repo       repository.Repository // repository
+	deleteChan chan model.DeleteTask // channel for deleting URLs
+	logger     *logger.MyLogger      // logger
 }
 
+// New is a constructor for UUIDService
 func New(ctx context.Context, repo repository.Repository, logger *logger.MyLogger) *UUIDService {
 	service := &UUIDService{
 		repo:       repo,
@@ -26,6 +28,7 @@ func New(ctx context.Context, repo repository.Repository, logger *logger.MyLogge
 	return service
 }
 
+// deleteWorker is a worker for deleting URLs
 func (s *UUIDService) deleteWorker(ctx context.Context) {
 	batch := []model.DeleteTask{}
 
@@ -56,6 +59,7 @@ func (s *UUIDService) deleteWorker(ctx context.Context) {
 	}
 }
 
+// flush is a function for deleting URLs
 func (s *UUIDService) flush(ctx context.Context, batch []model.DeleteTask) {
 	userURLs := make(map[string][]string)
 
@@ -71,6 +75,7 @@ func (s *UUIDService) flush(ctx context.Context, batch []model.DeleteTask) {
 	}
 }
 
+// Shorten is a function for shortening URLs
 func (s *UUIDService) Shorten(ctx context.Context, url model.CreateShortURLInput) (string, error) {
 	return s.repo.Shorten(ctx, model.Storage{
 		OriginalURL: url.OriginalURL,
@@ -78,6 +83,7 @@ func (s *UUIDService) Shorten(ctx context.Context, url model.CreateShortURLInput
 	})
 }
 
+// Unshorten is a function for unshortening URLs
 func (s *UUIDService) Unshorten(ctx context.Context, uuid model.GetShortURLInput) (string, error) {
 	return s.repo.Unshorten(ctx, model.Storage{
 		UUID:   uuid.UUID,
@@ -85,6 +91,7 @@ func (s *UUIDService) Unshorten(ctx context.Context, uuid model.GetShortURLInput
 	})
 }
 
+// GetUrlsByUserID is a function for getting URLs by user ID
 func (s *UUIDService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
 	urls, err := s.repo.GetUrlsByUserID(ctx, userID)
 	if err != nil {
@@ -93,6 +100,7 @@ func (s *UUIDService) GetUrlsByUserID(ctx context.Context, userID string) ([]mod
 	return mapper.ToUrlsResponse(urls), nil
 }
 
+// DeleteUrlsByUserID is a function for deleting URLs by user ID
 func (s *UUIDService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
 	select {
 	case s.deleteChan <- model.DeleteTask{
@@ -104,10 +112,12 @@ func (s *UUIDService) DeleteUrlsByUserID(ctx context.Context, userID string, uui
 	}
 }
 
+// Close is a function for closing the repository
 func (s *UUIDService) Close() error {
 	return s.repo.Close()
 }
 
+// PingContext is a function for checking the health of the repository
 func (s *UUIDService) PingContext(ctx context.Context) error {
 	return s.repo.PingContext(ctx)
 }

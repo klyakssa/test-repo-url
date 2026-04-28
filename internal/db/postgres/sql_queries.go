@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrInsertUniqueViolation = errors.New("insert unique violation")
-	ErrURLDeleted            = errors.New("URL is deleted")
+	ErrInsertUniqueViolation = errors.New("insert unique violation") // pgerrcode.UniqueViolation
+	ErrURLDeleted            = errors.New("URL is deleted")          // Err URL is deleted
 )
 
 func (s *PostgresStorage) Shorten(ctx context.Context, url model.Storage) (string, error) {

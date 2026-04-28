@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/handler"
 	"github.com/klyakssa/test-repo-url/internal/logger"
@@ -199,4 +202,267 @@ func BenchmarkMainHandler(b *testing.B) {
 			b.Fatalf("unexpected status: %d", w.Code)
 		}
 	}
+}
+
+type mockService struct {
+	urls map[string]string
+}
+
+func newMockService() *mockService {
+	return &mockService{
+		urls: make(map[string]string),
+	}
+}
+
+func (m *mockService) Shorten(ctx context.Context, input model.CreateShortURLInput) (string, error) {
+	uuid := "short-" + uuid.New().String()[:8]
+	m.urls[uuid] = input.OriginalURL
+	return "http://localhost:8080/" + uuid, nil
+}
+
+func (m *mockService) Unshorten(ctx context.Context, input model.GetShortURLInput) (string, error) {
+	uuid := strings.TrimPrefix(input.UUID, "http://localhost:8080/")
+	if url, ok := m.urls[uuid]; ok {
+		return url, nil
+	}
+	return "", fmt.Errorf("url not found")
+}
+
+func (m *mockService) GetUrlsByUserID(ctx context.Context, userID string) ([]model.UrlsResponse, error) {
+	var result []model.UrlsResponse
+	for short, original := range m.urls {
+		result = append(result, model.UrlsResponse{
+			ShortURL:    short,
+			OriginalURL: original,
+		})
+	}
+	return result, nil
+}
+
+func (m *mockService) DeleteUrlsByUserID(ctx context.Context, userID string, uuids []string) {
+	for _, uuid := range uuids {
+		delete(m.urls, uuid)
+	}
+}
+
+func (m *mockService) PingContext(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockService) Close() error {
+	return nil
+}
+
+// setupTestHandler создает handler для тестирования
+func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
+	log := &logger.MyLogger{
+		SugaredLogger: zap.NewNop().Sugar(),
+	}
+
+	cfg := &config.Config{
+		WebConfig: config.WebConfig{
+			HostPort: "localhost:8080",
+			BaseURL:  "http://localhost:8080",
+			Secret:   "test-secret-key",
+		},
+	}
+
+	mockSvc := newMockService()
+	h := handler.NewMyHandler(log, mockSvc, cfg)
+
+	return h, mockSvc
+}
+
+// ExampleMyHandlerStruct_ShortenHandler демонстрирует работу с эндпоинтом сокращения ссылки (text/plain)
+func ExampleMyHandlerStruct_ShortenHandler() {
+	h, _ := setupTestHandler()
+
+	// Создание запроса с телом в формате text/plain
+	body := strings.NewReader("https://example.com/very/long/url/that/needs/shortening")
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Content-Type", "text/plain")
+
+	w := httptest.NewRecorder()
+
+	h.ShortenHandler(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+	fmt.Printf("Short URL: %s\n", w.Body.String())
+
+	// Output:
+	// Status: 201
+	// Short URL: http://localhost:8080/short-xxxxxxxx
+}
+
+// ExampleMyHandlerStruct_UnshortenHandler демонстрирует работу с эндпоинтом восстановления оригинальной ссылки
+func ExampleMyHandlerStruct_UnshortenHandler() {
+	h, mockSvc := setupTestHandler()
+
+	shortURL, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/original/url",
+		UserID:      "test-user",
+	})
+
+	uuid := strings.TrimPrefix(shortURL, "http://localhost:8080/")
+
+	req := httptest.NewRequest(http.MethodGet, "/"+uuid, nil)
+	w := httptest.NewRecorder()
+
+	h.UnshortenHandler(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+	fmt.Printf("Location: %s\n", w.Header().Get("Location"))
+
+	// Output:
+	// Status: 307
+	// Location: https://example.com/original/url
+}
+
+// ExampleMyHandlerStruct_NewShortenHandler демонстрирует работу с эндпоинтом сокращения ссылки (application/json)
+func ExampleMyHandlerStruct_NewShortenHandler() {
+	h, _ := setupTestHandler()
+
+	reqBody := model.ShortenRequest{
+		URL: "https://api.example.com/long/endpoint/with/many/segments",
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	h.NewShortenHandler(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
+
+	var resp model.ShortenResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	fmt.Printf("Result: %s\n", resp.Result)
+
+	// Output:
+	// Status: 201
+	// Content-Type: application/json
+	// Result: http://localhost:8080/short-xxxxxxxx
+}
+
+// ExampleMyHandlerStruct_BatchHandler демонстрирует работу с эндпоинтом пакетного сокращения ссылок
+func ExampleMyHandlerStruct_BatchHandler() {
+	h, _ := setupTestHandler()
+
+	reqBody := []model.BatchShortenRequest{
+		{CorrelationID: "1", OUrl: "https://example.com/first"},
+		{CorrelationID: "2", OUrl: "https://example.com/second"},
+		{CorrelationID: "3", OUrl: "https://example.com/third"},
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/batch", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := context.WithValue(req.Context(), handler.UserIDKey, "test-user")
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	h.BatchHandler(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+	fmt.Printf("Content-Type: %s\n", w.Header().Get("Content-Type"))
+
+	var resp []model.BatchShortenResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	fmt.Printf("Number of results: %d\n", len(resp))
+	for _, r := range resp {
+		fmt.Printf("CorrelationID: %s -> %s\n", r.CorrelationID, r.SOrl)
+	}
+
+	// Output:
+	// Status: 201
+	// Content-Type: application/json
+	// Number of results: 3
+	// CorrelationID: 1 -> http://localhost:8080/short-xxxxxxxx
+	// CorrelationID: 2 -> http://localhost:8080/short-xxxxxxxx
+	// CorrelationID: 3 -> http://localhost:8080/short-xxxxxxxx
+}
+
+// ExampleMyHandlerStruct_PingPostgresHandler демонстрирует работу с эндпоинтом проверки соединения с БД
+func ExampleMyHandlerStruct_PingPostgresHandler() {
+	h, _ := setupTestHandler()
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	w := httptest.NewRecorder()
+
+	h.PingPostgresHandler(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
+}
+
+// ExampleMyHandlerStruct_GetUrlsHandler демонстрирует работу с эндпоинтом получения списка URL пользователя
+func ExampleMyHandlerStruct_GetUrlsHandler() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/url1",
+		UserID:      "test-user",
+	})
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/url2",
+		UserID:      "test-user",
+	})
+
+	r.GET("/api/user/urls", h.SecretMiddleware(), h.GetUrlsHandler())
+
+	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
+}
+
+// ExampleMyHandlerStruct_DeleteUrlsHandler демонстрирует работу с эндпоинтом удаления ссылок
+func ExampleMyHandlerStruct_DeleteUrlsHandler() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	short1, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/to-delete-1",
+		UserID:      "test-user",
+	})
+	short2, _ := mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/to-delete-2",
+		UserID:      "test-user",
+	})
+
+	uuid1 := strings.TrimPrefix(short1, "http://localhost:8080/")
+	uuid2 := strings.TrimPrefix(short2, "http://localhost:8080/")
+
+	r.DELETE("/api/user/urls", h.SecretMiddleware(), h.DeleteUrlsHandler())
+
+	deleteBody := []string{uuid1, uuid2}
+	jsonBody, _ := json.Marshal(deleteBody)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 202
 }
