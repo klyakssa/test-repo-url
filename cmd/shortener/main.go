@@ -41,21 +41,7 @@ func main() {
 		userService = uuidservice.New(ctx, db, log)
 	}
 
-	h := handler.NewMyHandler(log, userService, config)
-	r.Middleware(h.WithLogging())
-	r.Middleware(h.SecretMiddleware())
-	r.Middleware(h.GzipMiddleware())
-	r.Middleware(h.ErrorMiddleware())
-
-	r.SGET("/ping", h.PingPostgresHandler)
-	r.SGET("/:uuid", h.UnshortenHandler)
-	r.SPOST("/", h.ShortenHandler)
-	v1 := r.Group("/api/shorten")
-	v1.SPOST("", h.NewShortenHandler)
-	v1.SPOST("/batch", h.BatchHandler)
-	v2 := r.Group("/api/user")
-	v2.GET("/urls", h.GetUrlsHandler())
-	v2.DELETE("/urls", h.DeleteUrlsHandler())
+	r = initRoutes(log, userService, config, r)
 
 	go func() {
 		if err := r.Run(config.WebConfig.HostPort); err != nil {
@@ -91,4 +77,24 @@ func main() {
 	case <-ctx.Done():
 		log.Info("Application terminated gracefully")
 	}
+}
+
+func initRoutes(log *logger.MyLogger, userService *uuidservice.UUIDService, config *config.Config, r *router.MyRouter) *router.MyRouter {
+	h := handler.New(log, userService, config)
+	r.Middleware(h.WithLogging())
+	r.Middleware(h.SecretMiddleware())
+	r.Middleware(h.GzipMiddleware())
+	r.Middleware(h.ErrorMiddleware())
+
+	r.SGET("/ping", h.PingPostgresHandler)
+	r.SGET("/:uuid", h.UnshortenHandler)
+	r.SPOST("/", h.ShortenHandler)
+	v1 := r.Group("/api/shorten")
+	v1.SPOST("", h.NewShortenHandler)
+	v1.SPOST("/batch", h.BatchHandler)
+	v2 := r.Group("/api/user")
+	v2.GET("/urls", h.GetUrlsHandler())
+	v2.DELETE("/urls", h.DeleteUrlsHandler())
+
+	return r
 }

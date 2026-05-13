@@ -73,7 +73,7 @@ func TestMainHandler(t *testing.T) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.NewMyHandler(log, userService, testConfig)
+	hand := handler.New(log, userService, testConfig)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -140,7 +140,7 @@ func TestNewShortenHandler(t *testing.T) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.NewMyHandler(log, userService, testConfig)
+	hand := handler.New(log, userService, testConfig)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})
@@ -188,7 +188,7 @@ func BenchmarkMainHandler(b *testing.B) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.NewMyHandler(log, userService, testConfig)
+	hand := handler.New(log, userService, testConfig)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -268,7 +268,7 @@ func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
 	}
 
 	mockSvc := newMockService()
-	h := handler.NewMyHandler(log, mockSvc, cfg)
+	h := handler.New(log, mockSvc, cfg)
 
 	return h, mockSvc
 }

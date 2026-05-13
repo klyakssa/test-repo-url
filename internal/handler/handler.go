@@ -39,8 +39,8 @@ type MyHandlerStruct struct {
 	subscriber *audit.Audit           // is variable for audit output
 }
 
-// NewMyHandler is a constructor
-func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
+// New is a constructor
+func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		Logger:     l,
 		service:    uuid,
@@ -196,7 +196,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
@@ -295,14 +295,14 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
 	var req model.ShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -382,14 +382,14 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
 	var req []model.BatchShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -469,9 +469,11 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 		var uuids []string
 		if err := c.BindJSON(&uuids); err != nil {
 			h.Logger.Error(err)
-			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			http.Error(c.Writer, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
+
+		defer c.Request.Body.Close()
 
 		userID, ok := c.Request.Context().Value(UserIDKey).(string)
 		if !ok {

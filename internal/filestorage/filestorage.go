@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/klyakssa/test-repo-url/internal/model"
 )
 
@@ -27,14 +28,14 @@ func (f *FileStorage) Close() error {
 	return f.file.Close()
 }
 
-func (f *FileStorage) Save(data map[string]string) error {
+func (f *FileStorage) Save(data map[uuid.UUID]string) error {
 	if len(data) == 0 {
 		return nil
 	}
 	i := 1
 	var stf []model.FileStorageData
 	for shortURL, originalURL := range data {
-		stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: shortURL, OUrl: originalURL})
+		stf = append(stf, model.FileStorageData{UUID: strconv.Itoa(i), SUrl: shortURL.String(), OUrl: originalURL})
 		i++
 	}
 	dt, err := json.Marshal(stf)
@@ -59,7 +60,7 @@ func (f *FileStorage) Save(data map[string]string) error {
 	return nil
 }
 
-func (f *FileStorage) Load() (map[string]string, error) {
+func (f *FileStorage) Load() (map[uuid.UUID]string, error) {
 	data, err := io.ReadAll(f.file)
 	if err != nil {
 		panic(err)
@@ -72,9 +73,9 @@ func (f *FileStorage) Load() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal: %w", err)
 	}
-	m := make(map[string]string)
+	m := make(map[uuid.UUID]string)
 	for _, v := range stf {
-		m[v.SUrl] = v.OUrl
+		m[uuid.MustParse(v.SUrl)] = v.OUrl
 	}
 	return m, nil
 }
