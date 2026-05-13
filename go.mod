@@ -53,6 +53,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-resty/resty/v2 v2.17.2
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pressly/goose/v3 v3.26.0

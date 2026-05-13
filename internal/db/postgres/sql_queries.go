@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	urls "net/url"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,17 +13,14 @@ import (
 )
 
 var (
-	ErrInsertUniqueViolation = errors.New("insert unique violation")
-	ErrURLDeleted            = errors.New("URL is deleted")
+	ErrInsertUniqueViolation = errors.New("insert unique violation") // pgerrcode.UniqueViolation
+	ErrURLDeleted            = errors.New("URL is deleted")          // Err URL is deleted
 )
 
 func (s *PostgresStorage) Shorten(ctx context.Context, url model.Storage) (string, error) {
 	uuid := uuid.NewString()
-	shurl, err := urls.JoinPath(s.cfg.WebConfig.BaseURL, uuid)
-	if err != nil {
-		return "", fmt.Errorf("join path: %w", err)
-	}
-	_, err = s.ExecContext(ctx, "INSERT INTO shorten_url (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)", uuid, shurl, url.OriginalURL, url.UserID)
+	shurl := fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, uuid)
+	_, err := s.ExecContext(ctx, "INSERT INTO shorten_url (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)", uuid, shurl, url.OriginalURL, url.UserID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation && strings.Contains(pgErr.ConstraintName, "shorten_url_original_url_key") {

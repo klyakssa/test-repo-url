@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,6 +21,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/repository"
+	"github.com/klyakssa/test-repo-url/pkg/audit"
 	"github.com/klyakssa/test-repo-url/pkg/gzip"
 	"github.com/klyakssa/test-repo-url/pkg/httperror"
 	"go.uber.org/zap"
@@ -27,22 +29,38 @@ import (
 
 type contextKey string
 
-const userIDKey contextKey = "user_id"
+const UserIDKey contextKey = "user_id" // is a key for user id
 
+// MyHandlerStruct is a struct for handler
 type MyHandlerStruct struct {
-	Logger  *logger.MyLogger
-	service repository.UserService
-	cfg     *config.Config
+	Logger     *logger.MyLogger       // is a logger
+	service    repository.UserService // is a service
+	cfg        *config.Config         // is a config
+	subscriber *audit.Audit           // is variable for audit output
 }
 
-func NewMyHandler(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
+// New is a constructor
+func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
 	return &MyHandlerStruct{
-		Logger:  l,
-		service: uuid,
-		cfg:     cfg,
+		Logger:     l,
+		service:    uuid,
+		cfg:        cfg,
+		subscriber: audit.NewAudit(cfg.Audit.AuditFile, cfg.Audit.AuditURL),
 	}
 }
 
+// WithLogging is a middleware for logging
+func (h *MyHandlerStruct) WithLogging() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+
+		c.Next()
+		h.Logger.Infow("request", "method", c.Request.Method, "path", c.Request.URL.Path, "duration", time.Since(start).Seconds())
+		h.Logger.Infow("response", "status", c.Writer.Status(), "size", c.Writer.Size())
+	}
+}
+
+// SecretMiddleware is a middleware for auth
 func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.Logger.Debug("SecretMiddleware")
@@ -75,7 +93,7 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 					HttpOnly: true,
 					SameSite: http.SameSiteLaxMode,
 				})
-				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(uuid)))
+				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), UserIDKey, string(uuid)))
 				c.Next()
 				return
 			}
@@ -110,11 +128,12 @@ func (h *MyHandlerStruct) SecretMiddleware() gin.HandlerFunc {
 		}
 
 		h.Logger.Debug("SecretMiddleware", zap.String("user_id", string(userID)))
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), userIDKey, string(userID)))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), UserIDKey, string(userID)))
 		c.Next()
 	}
 }
 
+// GzipMiddleware is a middleware for gzip
 func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
@@ -142,6 +161,7 @@ func (h *MyHandlerStruct) GzipMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ErrorMiddleware is a middleware for errors
 func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ew := httperror.NewErrorsWriter(c.Writer, c)
@@ -162,11 +182,13 @@ func (h *MyHandlerStruct) ErrorMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ShortenHandler is a handler for shorten link
+// Body: original url text/plain
 func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("ShortenHandler",
 		zap.Any("headers", r.Header))
 
-	userID, ok := r.Context().Value(userIDKey).(string)
+	userID, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -174,7 +196,7 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
@@ -201,17 +223,30 @@ func (h *MyHandlerStruct) ShortenHandler(w http.ResponseWriter, r *http.Request)
 		zap.String("user_id", userID),
 	)
 
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Action: "shorten",
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: string(body),
+	})
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", strconv.Itoa(len([]byte(shrt))))
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(shrt))
 }
 
+// UnshortenHandler is a handler for unshorten link
+// Param: uuid
 func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("UnshortenHandler",
 		zap.Any("headers", r.Header))
 
-	userID, ok := r.Context().Value(userIDKey).(string)
+	userID, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -236,10 +271,23 @@ func (h *MyHandlerStruct) UnshortenHandler(w http.ResponseWriter, r *http.Reques
 		zap.String("user_id", userID),
 	)
 
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Action: "follow",
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: lng,
+	})
+
 	w.Header().Add("Location", lng)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// NewShortenHandler is a handler for shorten link
+// Body: original url application/json
 func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("NewShortenHandler",
 		zap.Any("headers", r.Header))
@@ -247,14 +295,14 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
 	var req model.ShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -264,7 +312,7 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userID, ok := r.Context().Value(userIDKey).(string)
+	userID, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		userID = "unknown"
 	}
@@ -295,12 +343,24 @@ func (h *MyHandlerStruct) NewShortenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	go h.subscriber.Subscribe(&model.AuditEntry{
+		Action: "shorten",
+		UserID: func() string {
+			if ok {
+				return userID
+			}
+			return ""
+		}(),
+		URL: req.URL,
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusCreated)
 	w.Write(data)
 }
 
+// PingPostgresHandler is a handler for ping postgres
 func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("PingPostgresHandler",
 		zap.Any("headers", r.Header))
@@ -313,6 +373,8 @@ func (h *MyHandlerStruct) PingPostgresHandler(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusOK)
 }
 
+// BatchHandler is a handler for batch shorten
+// Body: original urls application/json
 func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("BatchHandler",
 		zap.Any("headers", r.Header))
@@ -320,14 +382,14 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusInternalServerError)
 		return
 	}
 
 	var req []model.BatchShortenRequest
 	if err = json.Unmarshal(body, &req); err != nil {
 		h.Logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -337,7 +399,7 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value(userIDKey).(string)
+	userID, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
@@ -369,12 +431,14 @@ func (h *MyHandlerStruct) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// GetUrlsHandler is a handler for get urls
+// Response: application/json original urls by user
 func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.Logger.Debug("GetUrlsHandler",
 			zap.Any("headers", c.Request.Header))
 
-		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		userID, ok := c.Request.Context().Value(UserIDKey).(string)
 		if !ok {
 			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -396,6 +460,8 @@ func (h *MyHandlerStruct) GetUrlsHandler() gin.HandlerFunc {
 	}
 }
 
+// DeleteUrlsHandler is a handler for delete urls by user
+// Body: uuids text/plain
 func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.Logger.Debug("DeleteUrlsHandler",
@@ -403,11 +469,13 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 		var uuids []string
 		if err := c.BindJSON(&uuids); err != nil {
 			h.Logger.Error(err)
-			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			http.Error(c.Writer, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
-		userID, ok := c.Request.Context().Value(userIDKey).(string)
+		defer c.Request.Body.Close()
+
+		userID, ok := c.Request.Context().Value(UserIDKey).(string)
 		if !ok {
 			http.Error(c.Writer, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

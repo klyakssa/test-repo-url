@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>model - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="../../../../../../lib/godoc/jquery.js" defer></script>
+
+
+
+<script src="../../../../../../lib/godoc/playground.js" defer></script>
+
+<script>var goVersion = "go1.22.2";</script>
+<script src="../../../../../../lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="http://localhost:8080/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="http://localhost:8080/pkg/">GoDoc</a></div>
+<a href="index.html%3Fm=all.html#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="http://localhost:8080/search">
+<div id="menu">
+
+<a id="playgroundButton" href="https://play.golang.org/" title="Show Go Playground">Play</a>
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+<div id="playground" class="play">
+	<div class="input"><textarea class="code" spellcheck="false">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, 世界")
+}</textarea></div>
+	<div class="output"></div>
+	<div class="buttons">
+		<a class="run" title="Run this code [shift-enter]">Run</a>
+		<a class="fmt" title="Format this code">Format</a>
+		<a class="share" title="Share this code">Share</a>
+	</div>
+</div>
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package model
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/klyakssa/test-repo-url/internal/model"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="index.html%3Fm=all.html#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="index.html%3Fm=all.html#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="index.html%3Fm=all.html#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="index.html%3Fm=all.html#AuditEntry">type AuditEntry</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#BatchShortenRequest">type BatchShortenRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#BatchShortenResponse">type BatchShortenResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#CreateShortURLInput">type CreateShortURLInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#DeleteTask">type DeleteTask</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#FileStorageData">type FileStorageData</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#GetShortURLInput">type GetShortURLInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#ShortURLModel">type ShortURLModel</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#ShortenRequest">type ShortenRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#ShortenResponse">type ShortenResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#Storage">type Storage</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#UrlsResponse">type UrlsResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="index.html%3Fm=all.html#UrlsStorage">type UrlsStorage</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go">model.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>AcceptedContentTypes is a list of accepted content types
+
+				<pre>var <span id="AcceptedContentTypes">AcceptedContentTypes</span> = []<a href="http://localhost:8080/pkg/builtin/#string">string</a>{
+    &#34;application/json&#34;,
+    &#34;text/html&#34;,
+}</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="AuditEntry">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1997:2163#L75">AuditEntry</a>
+				<a class="permalink" href="index.html%3Fm=all.html#AuditEntry">&#xb6;</a>
+				
+				
+			</h2>
+			<p>AuditEntry is a entry for audit
+
+			<pre>type AuditEntry struct {
+<span id="AuditEntry.Timestamp"></span>    Timestamp <a href="http://localhost:8080/pkg/builtin/#int64">int64</a>  `json:&#34;ts&#34;`
+<span id="AuditEntry.Action"></span>    Action    <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;action&#34;`
+<span id="AuditEntry.UserID"></span>    UserID    <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;user_id,omitempty&#34;`
+<span id="AuditEntry.URL"></span>    URL       <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="BatchShortenRequest">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=668:793#L18">BatchShortenRequest</a>
+				<a class="permalink" href="index.html%3Fm=all.html#BatchShortenRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<p>BatchShortenRequest is a request for batch shorten
+
+			<pre>type BatchShortenRequest struct {
+<span id="BatchShortenRequest.CorrelationID"></span>    CorrelationID <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;correlation_id&#34;`
+<span id="BatchShortenRequest.OUrl"></span>    OUrl          <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;original_url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="BatchShortenResponse">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=489:612#L12">BatchShortenResponse</a>
+				<a class="permalink" href="index.html%3Fm=all.html#BatchShortenResponse">&#xb6;</a>
+				
+				
+			</h2>
+			<p>BatchShortenResponse is a response for batch shorten
+
+			<pre>type BatchShortenResponse struct {
+<span id="BatchShortenResponse.CorrelationID"></span>    CorrelationID <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;correlation_id&#34;`
+<span id="BatchShortenResponse.SOrl"></span>    SOrl          <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;short_url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CreateShortURLInput">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1256:1331#L42">CreateShortURLInput</a>
+				<a class="permalink" href="index.html%3Fm=all.html#CreateShortURLInput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>CreateShortURLInput is a request for creating short url
+
+			<pre>type CreateShortURLInput struct {
+<span id="CreateShortURLInput.OriginalURL"></span>    OriginalURL <a href="http://localhost:8080/pkg/builtin/#string">string</a>
+<span id="CreateShortURLInput.UserID"></span>    UserID      <a href="http://localhost:8080/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DeleteTask">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1902:1960#L69">DeleteTask</a>
+				<a class="permalink" href="index.html%3Fm=all.html#DeleteTask">&#xb6;</a>
+				
+				
+			</h2>
+			<p>DeleteTask is a task for deleting
+
+			<pre>type DeleteTask struct {
+<span id="DeleteTask.UserID"></span>    UserID <a href="http://localhost:8080/pkg/builtin/#string">string</a>
+<span id="DeleteTask.UUIDs"></span>    UUIDs  []<a href="http://localhost:8080/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="FileStorageData">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=268:431#L4">FileStorageData</a>
+				<a class="permalink" href="index.html%3Fm=all.html#FileStorageData">&#xb6;</a>
+				
+				
+			</h2>
+			<p>FileStorageData is a data for file
+
+			<pre>type FileStorageData struct {
+<span id="FileStorageData.UUID"></span>    UUID   <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;uuid&#34;`
+<span id="FileStorageData.SUrl"></span>    SUrl   <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;short_url&#34;`
+<span id="FileStorageData.OUrl"></span>    OUrl   <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;original_url&#34;`
+<span id="FileStorageData.UserID"></span>    UserID <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;user_id&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="GetShortURLInput">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1133:1195#L36">GetShortURLInput</a>
+				<a class="permalink" href="index.html%3Fm=all.html#GetShortURLInput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>GetShortURLInput is a request for getting short url
+
+			<pre>type GetShortURLInput struct {
+<span id="GetShortURLInput.UUID"></span>    UUID   <a href="http://localhost:8080/pkg/builtin/#string">string</a>
+<span id="GetShortURLInput.UserID"></span>    UserID <a href="http://localhost:8080/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ShortURLModel">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=972:1076#L30">ShortURLModel</a>
+				<a class="permalink" href="index.html%3Fm=all.html#ShortURLModel">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ShortURLModel is a model for short url
+
+			<pre>type ShortURLModel struct {
+<span id="ShortURLModel.OriginalURL"></span>    OriginalURL <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;original_url&#34;`
+<span id="ShortURLModel.UserID"></span>    UserID      <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;user_id&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ShortenRequest">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=61:116#L1">ShortenRequest</a>
+				<a class="permalink" href="index.html%3Fm=all.html#ShortenRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ShortenRequest is a request for shortening
+
+			<pre>type ShortenRequest struct {
+<span id="ShortenRequest.URL"></span>    URL <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ShortenResponse">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=166:228#L1">ShortenResponse</a>
+				<a class="permalink" href="index.html%3Fm=all.html#ShortenResponse">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ShortenResponse is a response for shortening
+
+			<pre>type ShortenResponse struct {
+<span id="ShortenResponse.Result"></span>    Result <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;result&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Storage">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1658:1863#L60">Storage</a>
+				<a class="permalink" href="index.html%3Fm=all.html#Storage">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Storage is a storage
+
+			<pre>type Storage struct {
+<span id="Storage.UUID"></span>    UUID        <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;uuid&#34;`
+<span id="Storage.ShortURL"></span>    ShortURL    <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;short_url&#34;`
+<span id="Storage.OriginalURL"></span>    OriginalURL <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;original_url&#34;`
+<span id="Storage.UserID"></span>    UserID      <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;user_id&#34;`
+<span id="Storage.IsDeleted"></span>    IsDeleted   <a href="http://localhost:8080/pkg/builtin/#bool">bool</a>   `db:&#34;is_deleted&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="UrlsResponse">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1380:1489#L48">UrlsResponse</a>
+				<a class="permalink" href="index.html%3Fm=all.html#UrlsResponse">&#xb6;</a>
+				
+				
+			</h2>
+			<p>UrlsResponse is a response for getting urls
+
+			<pre>type UrlsResponse struct {
+<span id="UrlsResponse.ShortURL"></span>    ShortURL    <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;short_url&#34;`
+<span id="UrlsResponse.OriginalURL"></span>    OriginalURL <a href="http://localhost:8080/pkg/builtin/#string">string</a> `json:&#34;original_url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="UrlsStorage">type <a href="http://localhost:8080/src/github.com/klyakssa/test-repo-url/internal/model/model.go?s=1528:1632#L54">UrlsStorage</a>
+				<a class="permalink" href="index.html%3Fm=all.html#UrlsStorage">&#xb6;</a>
+				
+				
+			</h2>
+			<p>UrlsStorage is a storage for urls
+
+			<pre>type UrlsStorage struct {
+<span id="UrlsStorage.ShortURL"></span>    ShortURL    <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;short_url&#34;`
+<span id="UrlsStorage.OriginalURL"></span>    OriginalURL <a href="http://localhost:8080/pkg/builtin/#string">string</a> `db:&#34;original_url&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.22.2.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="http://localhost:8080/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

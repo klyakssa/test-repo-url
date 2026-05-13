@@ -3,7 +3,6 @@ package uuidstorage
 import (
 	"context"
 	"fmt"
-	urls "net/url"
 	"sync"
 
 	"github.com/google/uuid"
@@ -15,7 +14,7 @@ import (
 
 type UUIDStorage struct {
 	mu  sync.RWMutex
-	bd  map[string]string
+	bd  map[uuid.UUID]string
 	fs  *filestorage.FileStorage
 	cfg *config.Config
 }
@@ -26,7 +25,7 @@ func New(cfg *config.Config) *UUIDStorage {
 		panic(err)
 	}
 	uuidstorage := &UUIDStorage{
-		bd:  make(map[string]string),
+		bd:  make(map[uuid.UUID]string),
 		mu:  sync.RWMutex{},
 		fs:  fs,
 		cfg: cfg,
@@ -47,15 +46,18 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, e
 		s.mu.Lock()
 		defer s.mu.Unlock()
 
-		url.ShortURL = uuid.NewString()
+		uid := uuid.New()
 
-		s.bd[url.ShortURL] = url.OriginalURL
+		s.bd[uid] = url.OriginalURL
 
-		var err error
-		result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
-		if err != nil {
-			errChan <- fmt.Errorf("join path: %w", err)
-		}
+		url.ShortURL = uid.String()
+
+		// var err error
+		// result, err = urls.JoinPath(s.cfg.WebConfig.BaseURL, url.ShortURL)
+		// if err != nil {
+		// 	errChan <- fmt.Errorf("join path: %w", err)
+		// }
+		result = fmt.Sprintf("%s/%s", s.cfg.WebConfig.BaseURL, url.ShortURL)
 
 		close(done)
 	}()
@@ -70,14 +72,14 @@ func (s *UUIDStorage) Shorten(ctx context.Context, url model.Storage) (string, e
 	}
 }
 
-func (s *UUIDStorage) Unshorten(ctx context.Context, uuid model.Storage) (string, error) {
+func (s *UUIDStorage) Unshorten(ctx context.Context, uid model.Storage) (string, error) {
 	done := make(chan struct{})
 	var result string
 
 	go func() {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		result = s.bd[uuid.UUID]
+		result = s.bd[uuid.MustParse(uid.UUID)]
 		close(done)
 	}()
 
@@ -97,7 +99,7 @@ func (s *UUIDStorage) DeleteUrlsByUserID(ctx context.Context, userID string, uui
 	return nil
 }
 
-func (s *UUIDStorage) save(data map[string]string) *UUIDStorage {
+func (s *UUIDStorage) save(data map[uuid.UUID]string) *UUIDStorage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if data != nil {

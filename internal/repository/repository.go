@@ -6,10 +6,12 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/model"
 )
 
+// helpers is an interface for service functions
 type helpers interface {
 	Close() error
 }
 
+// Repository is an interface for repository functions
 type Repository interface {
 	Shorten(context.Context, model.Storage) (string, error)
 	Unshorten(context.Context, model.Storage) (string, error)
@@ -19,6 +21,7 @@ type Repository interface {
 	helpers
 }
 
+// UserService is an interface for service functions
 type UserService interface {
 	helpers
 	Shorten(context.Context, model.CreateShortURLInput) (string, error)
