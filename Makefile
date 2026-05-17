@@ -24,3 +24,7 @@ pprof-mem:
 
 build-flags:
 	go build -ldflags "-X main.buildVersion=$(BUILD_VERSION) -X main.buildDate=$(BUILD_DATE) -X main.buildCommit=$(BUILD_COMMIT)" -o ./cmd/shortener ./cmd/shortener
+
+style:
+	gofmt -s -w .
+	goimports -l -w .
