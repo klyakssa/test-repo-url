@@ -22,7 +22,9 @@ vendor/
 .idea
 .vscode
 
-storage.json
+*.json
 
 *.key
 *.crt
+
+

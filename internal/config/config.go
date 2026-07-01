@@ -1,6 +1,10 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/caarlos0/env/v6"
 	"github.com/spf13/pflag"
 )
@@ -13,7 +17,7 @@ type WebConfig struct {
 	HostPort    string `env:"SERVER_ADDRESS" envDefault:""`
 	BaseURL     string `env:"BASE_URL" envDefault:""`
 	Secret      string `env:"SECRET" envDefault:""`
-	EnableHTTPs bool   `env:"ENABLE_HTTPS" envDefault:"false"`
+	EnableHTTPs bool   `env:"ENABLE_HTTPS"`
 }
 
 type DBConfig struct {
@@ -30,10 +34,99 @@ type Config struct {
 	File      FileStorage
 	Audit     AuditConfig
 	PostDB    DBConfig
+	PathFile  string
+}
+
+type JSONConfig struct {
+	ServerAddress   string `json:"server_address"`
+	BaseURL         string `json:"base_url"`
+	FileStoragePath string `json:"file_storage_path"`
+	DatabaseDSN     string `json:"database_dsn"`
+	EnableHTTPS     bool   `json:"enable_https"`
+	Secret          string `json:"secret"`
+	AuditFile       string `json:"audit_file"`
+	AuditURL        string `json:"audit_url"`
+}
+
+func getConfigFilePath() (configFlag string) {
+
+	env.Parse(&configFlag)
+
+	flagConfig := pflag.StringP("config", "c", "", "path to config file")
+	pflag.Parse()
+
+	if configFlag == "" {
+		configFlag = *flagConfig
+	}
+
+	return configFlag
+}
+
+func loadJSONConfig(filePath string) (*JSONConfig, error) {
+	if filePath == "" {
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file %s: %w", filePath, err)
+	}
+
+	var jsonCfg JSONConfig
+	if err := json.Unmarshal(data, &jsonCfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config file %s: %w", filePath, err)
+	}
+
+	return &jsonCfg, nil
+}
+
+func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
+	if jsonCfg == nil {
+		return
+	}
+
+	if jsonCfg.ServerAddress != "" && cfg.WebConfig.HostPort == "" {
+		cfg.WebConfig.HostPort = jsonCfg.ServerAddress
+	}
+
+	if jsonCfg.BaseURL != "" && cfg.WebConfig.BaseURL == "" {
+		cfg.WebConfig.BaseURL = jsonCfg.BaseURL
+	}
+
+	if jsonCfg.FileStoragePath != "" && cfg.File.Path == "" {
+		cfg.File.Path = jsonCfg.FileStoragePath
+	}
+
+	if jsonCfg.DatabaseDSN != "" && cfg.PostDB.ConnString == "" {
+		cfg.PostDB.ConnString = jsonCfg.DatabaseDSN
+	}
+
+	if jsonCfg.Secret != "" && cfg.WebConfig.Secret == "" {
+		cfg.WebConfig.Secret = jsonCfg.Secret
+	}
+
+	if jsonCfg.AuditFile != "" && cfg.Audit.AuditFile == "" {
+		cfg.Audit.AuditFile = jsonCfg.AuditFile
+	}
+
+	if jsonCfg.AuditURL != "" && cfg.Audit.AuditURL == "" {
+		cfg.Audit.AuditURL = jsonCfg.AuditURL
+	}
+
+	if !cfg.WebConfig.EnableHTTPs && jsonCfg.EnableHTTPS {
+		cfg.WebConfig.EnableHTTPs = jsonCfg.EnableHTTPS
+	}
 }
 
 func InitFlagConfig() *Config {
 	cfg := Config{}
+
+	configPath := getConfigFilePath()
+	jsonCfg, err := loadJSONConfig(configPath)
+	if err != nil {
+		fmt.Printf("Warning: failed to load config file: %v\n", err)
+	}
+	applyJSONConfig(&cfg, jsonCfg)
 
 	env.Parse(&cfg.WebConfig)
 	env.Parse(&cfg.File)
