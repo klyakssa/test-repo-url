@@ -66,6 +66,7 @@ type UrlsStorage struct {
 	OriginalURL string `db:"original_url"`
 }
 
+// generate:reset
 // Storage is a storage
 type Storage struct {
 	UUID        string `db:"uuid"`

@@ -1,0 +1,319 @@
+// cmd/reset/main.go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"go/ast"
+	"go/format"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+type FieldInfo struct {
+	Name      string
+	Type      string
+	IsPointer bool
+	IsSlice   bool
+	IsMap     bool
+	IsStruct  bool
+}
+
+type StructInfo struct {
+	Name   string
+	Fields []FieldInfo
+	Dir    string
+	Pkg    string
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	rootDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	structs, err := scanStructs(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to scan structs: %w", err)
+	}
+
+	if err := generateResetMethods(structs); err != nil {
+		return fmt.Errorf("failed to generate reset methods: %w", err)
+	}
+
+	return nil
+}
+
+func scanStructs(rootDir string) (map[string][]StructInfo, error) {
+	structsByPackage := make(map[string][]StructInfo)
+
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".go") && !strings.Contains(info.Name(), ".gen.go") {
+			return processFile(path, structsByPackage)
+		}
+
+		return nil
+	})
+
+	return structsByPackage, err
+}
+
+func processFile(filePath string, structsByPackage map[string][]StructInfo) error {
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("failed to parse file %s: %w", filePath, err)
+	}
+
+	dir := filepath.Dir(filePath)
+	pkgName := node.Name.Name
+
+	if node.Comments == nil {
+		return nil
+	}
+
+	for _, decl := range node.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+
+		for _, spec := range genDecl.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+
+			if hasGenerateResetComment(genDecl.Doc) {
+				structInfo := parseStructFields(typeSpec.Name.Name, structType)
+				if structInfo != nil {
+					structsByPackage[dir] = append(structsByPackage[dir], StructInfo{
+						Name:   typeSpec.Name.Name,
+						Fields: structInfo.Fields,
+						Dir:    dir,
+						Pkg:    pkgName,
+					})
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func hasGenerateResetComment(doc *ast.CommentGroup) bool {
+	if doc == nil {
+		return false
+	}
+	for _, comment := range doc.List {
+		if strings.Contains(comment.Text, "// generate:reset") {
+			return true
+		}
+	}
+	return false
+}
+
+func parseStructFields(structName string, structType *ast.StructType) *StructInfo {
+	var fields []FieldInfo
+
+	for _, field := range structType.Fields.List {
+		for _, name := range field.Names {
+			fieldInfo := FieldInfo{
+				Name: name.Name,
+			}
+
+			switch t := field.Type.(type) {
+			case *ast.StarExpr:
+				fieldInfo.IsPointer = true
+				if ident, ok := t.X.(*ast.Ident); ok {
+					fieldInfo.Type = ident.Name
+					// Check if it's a struct (simplified check)
+					fieldInfo.IsStruct = isStructType(ident)
+				} else if sel, ok := t.X.(*ast.SelectorExpr); ok {
+					if ident, ok := sel.X.(*ast.Ident); ok {
+						fieldInfo.Type = ident.Name + "." + sel.Sel.Name
+					}
+				}
+			case *ast.Ident:
+				fieldInfo.Type = t.Name
+				fieldInfo.IsStruct = isStructType(t)
+			case *ast.ArrayType:
+				fieldInfo.IsSlice = true
+				if ident, ok := t.Elt.(*ast.Ident); ok {
+					fieldInfo.Type = "[]" + ident.Name
+				}
+			case *ast.MapType:
+				fieldInfo.IsMap = true
+				if key, ok := t.Key.(*ast.Ident); ok {
+					if value, ok := t.Value.(*ast.Ident); ok {
+						fieldInfo.Type = "map[" + key.Name + "]" + value.Name
+					}
+				}
+			case *ast.SelectorExpr:
+				if ident, ok := t.X.(*ast.Ident); ok {
+					fieldInfo.Type = ident.Name + "." + t.Sel.Name
+				}
+			}
+
+			fields = append(fields, fieldInfo)
+		}
+	}
+
+	return &StructInfo{
+		Name:   structName,
+		Fields: fields,
+	}
+}
+
+func isStructType(ident *ast.Ident) bool {
+	return len(ident.Name) > 0 && ident.Name[0] >= 'A' && ident.Name[0] <= 'Z'
+}
+
+func generateResetMethods(structsByPackage map[string][]StructInfo) error {
+	for dir, structs := range structsByPackage {
+		if len(structs) == 0 {
+			continue
+		}
+
+		outputPath := filepath.Join(dir, "reset.gen.go")
+		content := generateFileContent(structs)
+
+		// Format the code
+		formatted, err := format.Source([]byte(content))
+		if err != nil {
+			return fmt.Errorf("failed to format code for %s: %w", outputPath, err)
+		}
+
+		if err := os.WriteFile(outputPath, formatted, 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", outputPath, err)
+		}
+
+		fmt.Printf("Generated reset methods for %d structs in %s\n", len(structs), outputPath)
+	}
+
+	return nil
+}
+
+func generateFileContent(structs []StructInfo) string {
+	var buf bytes.Buffer
+
+	buf.WriteString("// Code generated by reset generator. DO NOT EDIT.\n\n")
+	buf.WriteString(fmt.Sprintf("package %s\n\n", structs[0].Pkg))
+
+	if needsImport(structs) {
+		buf.WriteString("import (\n")
+		if hasMapFields(structs) {
+			buf.WriteString("\t\"maps\"\n")
+		}
+		buf.WriteString(")\n\n")
+	}
+
+	for _, s := range structs {
+		buf.WriteString(generateResetMethod(s))
+		buf.WriteString("\n")
+	}
+
+	return buf.String()
+}
+
+func needsImport(structs []StructInfo) bool {
+	return hasMapFields(structs)
+}
+
+func hasMapFields(structs []StructInfo) bool {
+	for _, s := range structs {
+		for _, f := range s.Fields {
+			if f.IsMap {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func generateResetMethod(s StructInfo) string {
+	var buf bytes.Buffer
+
+	buf.WriteString(fmt.Sprintf("func (rs *%s) Reset() {\n", s.Name))
+	buf.WriteString("\tif rs == nil {\n")
+	buf.WriteString("\t\treturn\n")
+	buf.WriteString("\t}\n\n")
+
+	for _, field := range s.Fields {
+		generateFieldReset(&buf, field)
+	}
+
+	buf.WriteString("}\n")
+
+	return buf.String()
+}
+
+func generateFieldReset(buf *bytes.Buffer, field FieldInfo) {
+	switch {
+	case field.IsSlice:
+		buf.WriteString(fmt.Sprintf("\trs.%s = rs.%s[:0]\n", field.Name, field.Name))
+
+	case field.IsMap:
+		buf.WriteString(fmt.Sprintf("\tclear(rs.%s)\n", field.Name))
+
+	case field.IsPointer:
+		buf.WriteString(fmt.Sprintf("\tif rs.%s != nil {\n", field.Name))
+		if field.IsStruct {
+			buf.WriteString(fmt.Sprintf("\t\trs.%s.Reset()\n", field.Name))
+		} else {
+			switch field.Type {
+			case "string":
+				buf.WriteString(fmt.Sprintf("\t\t*rs.%s = \"\"\n", field.Name))
+			case "int", "int8", "int16", "int32", "int64",
+				"uint", "uint8", "uint16", "uint32", "uint64", "uintptr":
+				buf.WriteString(fmt.Sprintf("\t\t*rs.%s = 0\n", field.Name))
+			case "float32", "float64":
+				buf.WriteString(fmt.Sprintf("\t\t*rs.%s = 0.0\n", field.Name))
+			case "bool":
+				buf.WriteString(fmt.Sprintf("\t\t*rs.%s = false\n", field.Name))
+			default:
+				buf.WriteString(fmt.Sprintf("\t\t// TODO: handle pointer to %s\n", field.Type))
+			}
+		}
+		buf.WriteString("\t}\n")
+
+	case field.IsStruct:
+		buf.WriteString(fmt.Sprintf("\tif resetter, ok := interface{}(&rs.%s).(interface{ Reset() }); ok {\n", field.Name))
+		buf.WriteString("\t\tresetter.Reset()\n")
+		buf.WriteString("\t}\n")
+
+	default:
+		switch field.Type {
+		case "string":
+			buf.WriteString(fmt.Sprintf("\trs.%s = \"\"\n", field.Name))
+		case "int", "int8", "int16", "int32", "int64",
+			"uint", "uint8", "uint16", "uint32", "uint64", "uintptr":
+			buf.WriteString(fmt.Sprintf("\trs.%s = 0\n", field.Name))
+		case "float32", "float64":
+			buf.WriteString(fmt.Sprintf("\trs.%s = 0.0\n", field.Name))
+		case "bool":
+			buf.WriteString(fmt.Sprintf("\trs.%s = false\n", field.Name))
+		default:
+			buf.WriteString(fmt.Sprintf("\t// TODO: handle type %s for field %s\n", field.Type, field.Name))
+		}
+	}
+}
