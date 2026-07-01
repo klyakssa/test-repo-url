@@ -18,6 +18,8 @@ type WebConfig struct {
 	BaseURL     string `env:"BASE_URL" envDefault:""`
 	Secret      string `env:"SECRET" envDefault:""`
 	EnableHTTPS bool   `env:"ENABLE_HTTPS"`
+	CertFile    string `env:"CERT_FILE" envDefault:""`
+	KeyFile     string `env:"KEY_FILE" envDefault:""`
 }
 
 type DBConfig struct {
@@ -50,7 +52,7 @@ type JSONConfig struct {
 
 func getConfigFilePath() (configFlag string) {
 
-	env.Parse(&configFlag)
+	configFlag = os.Getenv("CONFIG")
 
 	flagConfig := pflag.StringP("config", "c", "", "path to config file")
 	pflag.Parse()

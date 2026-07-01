@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -8,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -19,6 +21,7 @@ import (
 type MyRouter struct {
 	*gin.Engine
 	Config *config.Config
+	server *http.Server
 }
 
 func NewMyRouter(cfg *config.Config) *MyRouter {
@@ -28,14 +31,32 @@ func NewMyRouter(cfg *config.Config) *MyRouter {
 	}
 }
 
-func (r *MyRouter) Run(addr string, enableTLS bool) error {
-	if enableTLS {
-		if err := generateTLSCertificates("server.crt", "server.key"); err != nil {
-			return fmt.Errorf("failed to generate TLS certificates: %w", err)
+func (r *MyRouter) Run(ctx context.Context, webConfig *config.WebConfig) error {
+	errChan := make(chan error, 1)
+
+	go func() {
+		if webConfig.EnableHTTPS {
+			if err := generateTLSCertificates(webConfig.CertFile, webConfig.KeyFile); err != nil {
+				errChan <- err
+			}
+			if err := r.Engine.RunTLS(webConfig.HostPort, webConfig.CertFile, webConfig.KeyFile); err != nil {
+				errChan <- err
+			}
+			return
 		}
-		return r.Engine.RunTLS(addr, "server.crt", "server.key")
+		if err := r.Engine.Run(webConfig.HostPort); err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return r.server.Shutdown(shutdownCtx)
+	case err := <-errChan:
+		return err
 	}
-	return r.Engine.Run(addr)
 }
 
 func (r *MyRouter) SGET(pattern string, handler func(w http.ResponseWriter, r *http.Request)) {
@@ -81,7 +102,8 @@ func generateTLSCertificates(certFile, keyFile string) error {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		DNSNames:              []string{"localhost", "127.0.0.1"},
+		DNSNames:              []string{"localhost"},
+		IPAddresses:           []net.IP{net.IPv4(127, 0, 0, 1)},
 	}
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
@@ -93,7 +115,12 @@ func generateTLSCertificates(certFile, keyFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create cert file: %w", err)
 	}
-	defer certFileHandle.Close()
+	defer func() {
+		err = certFileHandle.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	if err := pem.Encode(certFileHandle, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes}); err != nil {
 		return fmt.Errorf("failed to write certificate: %w", err)
@@ -103,7 +130,12 @@ func generateTLSCertificates(certFile, keyFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create key file: %w", err)
 	}
-	defer keyFileHandle.Close()
+	defer func() {
+		err = keyFileHandle.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	if err := pem.Encode(keyFileHandle, &pem.Block{
 		Type:  "RSA PRIVATE KEY",

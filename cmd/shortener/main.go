@@ -56,17 +56,8 @@ func main() {
 	r = initRoutes(log, userService, config, r)
 
 	go func() {
-		if err := r.Run(config.WebConfig.HostPort, config.WebConfig.EnableHTTPS); err != nil {
+		if err := r.Run(ctx, &config.WebConfig); err != nil {
 			errChan <- err
-		}
-	}()
-
-	defer func() {
-		cancel()
-		if err := userService.Close(); err != nil {
-			log.Error(err)
-		} else {
-			log.Info("Shutting down gracefully")
 		}
 	}()
 
@@ -89,6 +80,12 @@ func main() {
 		log.Error("Application terminated with error: %v", err)
 		cancel()
 	case <-ctx.Done():
+
+		if err := userService.Close(); err != nil {
+			log.Error(err)
+		} else {
+			log.Info("Shutting down gracefully")
+		}
 		log.Info("Application terminated gracefully")
 	}
 }
