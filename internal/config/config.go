@@ -18,8 +18,8 @@ type WebConfig struct {
 	BaseURL     string `env:"BASE_URL" envDefault:""`
 	Secret      string `env:"SECRET" envDefault:""`
 	EnableHTTPS bool   `env:"ENABLE_HTTPS"`
-	CertFile    string `env:"CERT_FILE" envDefault:""`
-	KeyFile     string `env:"KEY_FILE" envDefault:""`
+	CertFile    string `env:"CERT_FILE" envDefault:"server.crt"`
+	KeyFile     string `env:"KEY_FILE" envDefault:"server.key"`
 }
 
 type DBConfig struct {
