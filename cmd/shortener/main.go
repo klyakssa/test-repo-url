@@ -55,7 +55,7 @@ func main() {
 	r = initRoutes(log, userService, config, r)
 
 	go func() {
-		if err := r.Run(config.WebConfig.HostPort); err != nil {
+		if err := r.Run(config.WebConfig.HostPort, config.WebConfig.EnableHTTPs); err != nil {
 			errChan <- err
 		}
 	}()

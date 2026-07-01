@@ -23,3 +23,6 @@ vendor/
 .vscode
 
 storage.json
+
+*.key
+*.crt

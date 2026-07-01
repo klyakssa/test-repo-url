@@ -1,7 +1,16 @@
 package router
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
+	"math/big"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/klyakssa/test-repo-url/internal/config"
@@ -19,7 +28,13 @@ func NewMyRouter(cfg *config.Config) *MyRouter {
 	}
 }
 
-func (r *MyRouter) Run(addr string) error {
+func (r *MyRouter) Run(addr string, enableTLS bool) error {
+	if enableTLS {
+		if err := generateTLSCertificates("server.crt", "server.key"); err != nil {
+			return fmt.Errorf("failed to generate TLS certificates: %w", err)
+		}
+		return r.Engine.RunTLS(addr, "server.crt", "server.key")
+	}
 	return r.Engine.Run(addr)
 }
 
@@ -41,4 +56,61 @@ func (r *MyRouter) Middleware(middleware ...gin.HandlerFunc) {
 
 func (r *MyRouter) Group(grp string) *RouterGroup {
 	return NewGroup(r.Engine.Group(grp))
+}
+
+func generateTLSCertificates(certFile, keyFile string) error {
+
+	if _, err := os.Stat(certFile); err == nil {
+		if _, err := os.Stat(keyFile); err == nil {
+			return nil
+		}
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("failed to generate private key: %w", err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject: pkix.Name{
+			CommonName: "localhost",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour), // 1 год
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{"localhost", "127.0.0.1"},
+	}
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return fmt.Errorf("failed to create certificate: %w", err)
+	}
+
+	certFileHandle, err := os.Create(certFile)
+	if err != nil {
+		return fmt.Errorf("failed to create cert file: %w", err)
+	}
+	defer certFileHandle.Close()
+
+	if err := pem.Encode(certFileHandle, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes}); err != nil {
+		return fmt.Errorf("failed to write certificate: %w", err)
+	}
+
+	keyFileHandle, err := os.Create(keyFile)
+	if err != nil {
+		return fmt.Errorf("failed to create key file: %w", err)
+	}
+	defer keyFileHandle.Close()
+
+	if err := pem.Encode(keyFileHandle, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	}); err != nil {
+		return fmt.Errorf("failed to write private key: %w", err)
+	}
+
+	return nil
 }

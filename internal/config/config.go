@@ -10,9 +10,10 @@ type FileStorage struct {
 }
 
 type WebConfig struct {
-	HostPort string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseURL  string `env:"BASE_URL" envDefault:""`
-	Secret   string `env:"SECRET" envDefault:""`
+	HostPort    string `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL     string `env:"BASE_URL" envDefault:""`
+	Secret      string `env:"SECRET" envDefault:""`
+	EnableHTTPs bool   `env:"ENABLE_HTTPS" envDefault:"false"`
 }
 
 type DBConfig struct {
@@ -43,9 +44,10 @@ func InitFlagConfig() *Config {
 	flagBaseURL := pflag.StringP("base", "b", "http://localhost:8080", "base url")
 	flagFilePath := pflag.StringP("file", "f", "./storage.json", "file storage path")
 	flagConnString := pflag.StringP("postgresdb", "d", "", "database connection string") //-d=postgres://postgres:11@localhost:5432/test_prac?sslmode=disable -d=postgres://test:11@localhost:5432/prac?sslmode=disable
-	flagSecret := pflag.StringP("secret", "s", "GASGIOPHFAISGFAHBKWAYFGS", "secret key")
+	flagSecret := pflag.StringP("secret", "k", "GASGIOPHFAISGFAHBKWAYFGS", "secret key")
 	flagAuditFile := pflag.StringP("audit-file", "l", "", "audit log file path")
 	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
+	flagEnableHTTPs := pflag.BoolP("enable-https", "s", false, "enable https")
 
 	pflag.Parse()
 
@@ -75,6 +77,10 @@ func InitFlagConfig() *Config {
 
 	if cfg.Audit.AuditURL == "" {
 		cfg.Audit.AuditURL = *flagAuditURL
+	}
+
+	if !cfg.WebConfig.EnableHTTPs {
+		cfg.WebConfig.EnableHTTPs = *flagEnableHTTPs
 	}
 
 	return &cfg
