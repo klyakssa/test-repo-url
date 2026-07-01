@@ -17,7 +17,7 @@ type WebConfig struct {
 	HostPort    string `env:"SERVER_ADDRESS" envDefault:""`
 	BaseURL     string `env:"BASE_URL" envDefault:""`
 	Secret      string `env:"SECRET" envDefault:""`
-	EnableHTTPs bool   `env:"ENABLE_HTTPS"`
+	EnableHTTPS bool   `env:"ENABLE_HTTPS"`
 }
 
 type DBConfig struct {
@@ -113,8 +113,8 @@ func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
 		cfg.Audit.AuditURL = jsonCfg.AuditURL
 	}
 
-	if !cfg.WebConfig.EnableHTTPs && jsonCfg.EnableHTTPS {
-		cfg.WebConfig.EnableHTTPs = jsonCfg.EnableHTTPS
+	if !cfg.WebConfig.EnableHTTPS && jsonCfg.EnableHTTPS {
+		cfg.WebConfig.EnableHTTPS = jsonCfg.EnableHTTPS
 	}
 }
 
@@ -140,7 +140,7 @@ func InitFlagConfig() *Config {
 	flagSecret := pflag.StringP("secret", "k", "GASGIOPHFAISGFAHBKWAYFGS", "secret key")
 	flagAuditFile := pflag.StringP("audit-file", "l", "", "audit log file path")
 	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
-	flagEnableHTTPs := pflag.BoolP("enable-https", "s", false, "enable https")
+	flagEnableHTTPS := pflag.BoolP("enable-https", "s", false, "enable https")
 
 	pflag.Parse()
 
@@ -172,8 +172,8 @@ func InitFlagConfig() *Config {
 		cfg.Audit.AuditURL = *flagAuditURL
 	}
 
-	if !cfg.WebConfig.EnableHTTPs {
-		cfg.WebConfig.EnableHTTPs = *flagEnableHTTPs
+	if !cfg.WebConfig.EnableHTTPS {
+		cfg.WebConfig.EnableHTTPS = *flagEnableHTTPS
 	}
 
 	return &cfg
