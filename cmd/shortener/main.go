@@ -7,6 +7,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/klyakssa/test-repo-url/internal/config"
 	"github.com/klyakssa/test-repo-url/internal/db/postgres"
@@ -71,13 +72,15 @@ func main() {
 
 	go func() {
 		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, os.Interrupt)
+		signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 		select {
 		case <-sigChan:
 			log.Info("Shutdown signal received")
+			signal.Stop(sigChan)
 			cancel()
 		case <-ctx.Done():
+			signal.Stop(sigChan)
 		}
 	}()
 
