@@ -121,3 +121,8 @@ func (s *UUIDService) Close() error {
 func (s *UUIDService) PingContext(ctx context.Context) error {
 	return s.repo.PingContext(ctx)
 }
+
+// GetStats is a function for getting statistics
+func (s *UUIDService) GetStats(ctx context.Context) (model.GetStats, error) {
+	return s.repo.GetStats(ctx)
+}

@@ -18,6 +18,7 @@ type Repository interface {
 	GetUrlsByUserID(context.Context, string) ([]model.UrlsStorage, error)
 	DeleteUrlsByUserID(context.Context, string, []string) error
 	PingContext(context.Context) error
+	GetStats(context.Context) (model.GetStats, error)
 	helpers
 }
 
@@ -29,4 +30,5 @@ type UserService interface {
 	GetUrlsByUserID(context.Context, string) ([]model.UrlsResponse, error)
 	DeleteUrlsByUserID(context.Context, string, []string)
 	PingContext(context.Context) error
+	GetStats(context.Context) (model.GetStats, error)
 }

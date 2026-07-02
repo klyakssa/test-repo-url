@@ -14,12 +14,13 @@ type FileStorage struct {
 }
 
 type WebConfig struct {
-	HostPort    string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseURL     string `env:"BASE_URL" envDefault:""`
-	Secret      string `env:"SECRET" envDefault:""`
-	EnableHTTPS bool   `env:"ENABLE_HTTPS"`
-	CertFile    string `env:"CERT_FILE" envDefault:"server.crt"`
-	KeyFile     string `env:"KEY_FILE" envDefault:"server.key"`
+	HostPort      string `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL       string `env:"BASE_URL" envDefault:""`
+	Secret        string `env:"SECRET" envDefault:""`
+	EnableHTTPS   bool   `env:"ENABLE_HTTPS"`
+	CertFile      string `env:"CERT_FILE" envDefault:"server.crt"`
+	KeyFile       string `env:"KEY_FILE" envDefault:"server.key"`
+	TrustedSubnet string `env:"TRUSTED_SUBNET" envDefault:""`
 }
 
 type DBConfig struct {
@@ -48,6 +49,7 @@ type JSONConfig struct {
 	Secret          string `json:"secret"`
 	AuditFile       string `json:"audit_file"`
 	AuditURL        string `json:"audit_url"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 }
 
 func getConfigFilePath() (configFlag string) {
@@ -118,6 +120,10 @@ func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
 	if !cfg.WebConfig.EnableHTTPS && jsonCfg.EnableHTTPS {
 		cfg.WebConfig.EnableHTTPS = jsonCfg.EnableHTTPS
 	}
+
+	if jsonCfg.TrustedSubnet != "" && cfg.WebConfig.TrustedSubnet == "" {
+		cfg.WebConfig.TrustedSubnet = jsonCfg.TrustedSubnet
+	}
 }
 
 func InitFlagConfig() *Config {
@@ -143,6 +149,7 @@ func InitFlagConfig() *Config {
 	flagAuditFile := pflag.StringP("audit-file", "l", "", "audit log file path")
 	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
 	flagEnableHTTPS := pflag.BoolP("enable-https", "s", false, "enable https")
+	flagTrustedSubnet := pflag.StringP("trusted-subnet", "t", "", "trusted subnet")
 
 	pflag.Parse()
 
@@ -176,6 +183,10 @@ func InitFlagConfig() *Config {
 
 	if !cfg.WebConfig.EnableHTTPS {
 		cfg.WebConfig.EnableHTTPS = *flagEnableHTTPS
+	}
+
+	if cfg.WebConfig.TrustedSubnet == "" {
+		cfg.WebConfig.TrustedSubnet = *flagTrustedSubnet
 	}
 
 	return &cfg

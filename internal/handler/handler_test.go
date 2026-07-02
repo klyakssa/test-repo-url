@@ -253,6 +253,10 @@ func (m *mockService) Close() error {
 	return nil
 }
 
+func (m *mockService) GetStats(ctx context.Context) (model.GetStats, error) {
+	return model.GetStats{}, nil
+}
+
 // setupTestHandler создает handler для тестирования
 func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
 	log := &logger.MyLogger{

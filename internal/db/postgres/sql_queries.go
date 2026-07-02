@@ -71,3 +71,15 @@ func (s *PostgresStorage) selectShortURLByOriginalURL(url string, ctx context.Co
 	}
 	return shrtURL, nil
 }
+
+func (s *PostgresStorage) GetStats(ctx context.Context) (stats model.GetStats, err error) {
+	err = s.QueryRowContext(ctx, "SELECT COUNT(*) FROM shorten_url").Scan(&stats.Urls)
+	if err != nil {
+		return model.GetStats{}, fmt.Errorf("get stats: %w", err)
+	}
+	err = s.QueryRowContext(ctx, "SELECT COUNT(DISTINCT user_id) FROM shorten_url").Scan(&stats.Users)
+	if err != nil {
+		return model.GetStats{}, fmt.Errorf("get stats: %w", err)
+	}
+	return stats, nil
+}
