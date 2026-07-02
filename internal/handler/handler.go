@@ -41,12 +41,12 @@ type MyHandlerStruct struct {
 }
 
 // New is a constructor
-func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
+func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config, subscriber *audit.Audit) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		Logger:     l,
 		service:    uuid,
 		cfg:        cfg,
-		subscriber: audit.NewAudit(cfg.Audit.AuditFile, cfg.Audit.AuditURL),
+		subscriber: subscriber,
 	}
 }
 

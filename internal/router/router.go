@@ -25,9 +25,16 @@ type MyRouter struct {
 }
 
 func NewMyRouter(cfg *config.Config) *MyRouter {
+	engine := gin.Default()
 	return &MyRouter{
-		Engine: gin.Default(),
+		Engine: engine,
 		Config: cfg,
+		server: &http.Server{
+			Addr:         cfg.WebConfig.BaseURL,
+			Handler:      engine,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+		},
 	}
 }
 

@@ -32,12 +32,17 @@ type AuditConfig struct {
 	AuditURL  string `env:"AUDIT_URL" envDefault:""`
 }
 
+type GRPCConfig struct {
+	GRPCPort string `env:"GRPC_PORT"`
+}
+
 type Config struct {
-	WebConfig WebConfig
-	File      FileStorage
-	Audit     AuditConfig
-	PostDB    DBConfig
-	PathFile  string
+	WebConfig  WebConfig
+	File       FileStorage
+	Audit      AuditConfig
+	PostDB     DBConfig
+	PathFile   string
+	GRPCConfig GRPCConfig
 }
 
 type JSONConfig struct {
@@ -50,6 +55,7 @@ type JSONConfig struct {
 	AuditFile       string `json:"audit_file"`
 	AuditURL        string `json:"audit_url"`
 	TrustedSubnet   string `json:"trusted_subnet"`
+	GRPCPort        string `json:"grpc_port"`
 }
 
 func getConfigFilePath() (configFlag string) {
@@ -124,6 +130,10 @@ func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
 	if jsonCfg.TrustedSubnet != "" && cfg.WebConfig.TrustedSubnet == "" {
 		cfg.WebConfig.TrustedSubnet = jsonCfg.TrustedSubnet
 	}
+
+	if jsonCfg.GRPCPort != "" && cfg.GRPCConfig.GRPCPort == "" {
+		cfg.GRPCConfig.GRPCPort = jsonCfg.GRPCPort
+	}
 }
 
 func InitFlagConfig() *Config {
@@ -140,6 +150,7 @@ func InitFlagConfig() *Config {
 	env.Parse(&cfg.File)
 	env.Parse(&cfg.PostDB)
 	env.Parse(&cfg.Audit)
+	env.Parse(&cfg.GRPCConfig)
 
 	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
 	flagBaseURL := pflag.StringP("base", "b", "http://localhost:8080", "base url")
@@ -150,6 +161,7 @@ func InitFlagConfig() *Config {
 	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
 	flagEnableHTTPS := pflag.BoolP("enable-https", "s", false, "enable https")
 	flagTrustedSubnet := pflag.StringP("trusted-subnet", "t", "", "trusted subnet")
+	flagGRPCPort := pflag.StringP("grpc-port", "g", "localhost:8081", "grpc port")
 
 	pflag.Parse()
 
@@ -187,6 +199,10 @@ func InitFlagConfig() *Config {
 
 	if cfg.WebConfig.TrustedSubnet == "" {
 		cfg.WebConfig.TrustedSubnet = *flagTrustedSubnet
+	}
+
+	if cfg.GRPCConfig.GRPCPort == "" {
+		cfg.GRPCConfig.GRPCPort = *flagGRPCPort
 	}
 
 	return &cfg

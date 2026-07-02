@@ -21,6 +21,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
+	"github.com/klyakssa/test-repo-url/pkg/audit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -73,7 +74,9 @@ func TestMainHandler(t *testing.T) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.New(log, userService, testConfig)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+
+	hand := handler.New(log, userService, testConfig, audit)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -139,8 +142,9 @@ func TestNewShortenHandler(t *testing.T) {
 
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
 
-	hand := handler.New(log, userService, testConfig)
+	hand := handler.New(log, userService, testConfig, audit)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})
@@ -188,7 +192,9 @@ func BenchmarkMainHandler(b *testing.B) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.New(log, userService, testConfig)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+
+	hand := handler.New(log, userService, testConfig, audit)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -272,7 +278,8 @@ func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
 	}
 
 	mockSvc := newMockService()
-	h := handler.New(log, mockSvc, cfg)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+	h := handler.New(log, mockSvc, cfg, audit)
 
 	return h, mockSvc
 }
