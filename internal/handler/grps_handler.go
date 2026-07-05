@@ -2,19 +2,28 @@ package handler
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
+	"crypto/tls"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/google/uuid"
+	"github.com/klyakssa/test-repo-url/internal/config"
+	"github.com/klyakssa/test-repo-url/internal/db/postgres"
 	"github.com/klyakssa/test-repo-url/internal/logger"
 	"github.com/klyakssa/test-repo-url/internal/model"
 	pb "github.com/klyakssa/test-repo-url/internal/proto"
@@ -27,28 +36,116 @@ type ShortenerServer struct {
 	service    repository.UserService
 	subscriber *audit.Audit
 	logger     *logger.MyLogger
-	baseURL    string
 	grpcServer *grpc.Server
+	config     *config.Config
 }
 
 func NewShortenerServer(
 	svc repository.UserService,
 	subscriber *audit.Audit,
 	logger *logger.MyLogger,
-	baseURL string,
+	config *config.Config,
 ) *ShortenerServer {
 	return &ShortenerServer{
 		service:    svc,
 		subscriber: subscriber,
 		logger:     logger,
-		baseURL:    baseURL,
+		config:     config,
+	}
+}
+
+func (s *ShortenerServer) AuthInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		s.logger.Debug("AuthInterceptor", zap.String("method", info.FullMethod))
+
+		key := sha256.Sum256([]byte(s.config.WebConfig.Secret))
+
+		aesblock, err := aes.NewCipher(key[:])
+		if err != nil {
+			s.logger.Error(err)
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+
+		aesgcm, err := cipher.NewGCM(aesblock)
+		if err != nil {
+			s.logger.Error(err)
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+
+		nonce := key[len(key)-aesgcm.NonceSize():]
+
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, status.Error(codes.Unauthenticated, "missing metadata")
+		}
+
+		authHeader := md.Get("authorization")
+		if len(authHeader) == 0 {
+			uuid := uuid.NewString()
+			userID := hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil))
+			ctx = context.WithValue(ctx, UserIDKey, userID)
+
+			s.logger.Debug("New user created", zap.String("user_id", userID))
+
+			resp, err := handler(ctx, req)
+			if err != nil {
+				s.logger.Error("Failed to handle request", zap.Error(err))
+				return nil, status.Error(codes.Internal, "failed to handle request")
+			}
+			return resp, nil
+		}
+
+		token := authHeader[0]
+		if !strings.HasPrefix(token, "Bearer ") {
+			return nil, status.Error(codes.Unauthenticated, "invalid authorization format")
+		}
+
+		encryptedUserID := strings.TrimPrefix(token, "Bearer ")
+
+		data, err := hex.DecodeString(encryptedUserID)
+		if err != nil {
+			s.logger.Debug("Failed to decode user ID", zap.Error(err))
+			uuid := uuid.NewString()
+			userID := hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil))
+			ctx = context.WithValue(ctx, UserIDKey, userID)
+
+			s.logger.Debug("New user created", zap.String("user_id", userID))
+
+			resp, err := handler(ctx, req)
+			if err != nil {
+				s.logger.Error("Failed to handle request", zap.Error(err))
+				return nil, status.Error(codes.Internal, "failed to handle request")
+			}
+			return resp, nil
+		}
+
+		userID, err := aesgcm.Open(nil, nonce, data, nil)
+		if err != nil {
+			uuid := uuid.NewString()
+			userID := hex.EncodeToString(aesgcm.Seal(nil, nonce, []byte(uuid), nil))
+			ctx = context.WithValue(ctx, UserIDKey, userID)
+
+			s.logger.Debug("New user created", zap.String("user_id", userID))
+
+			resp, err := handler(ctx, req)
+			if err != nil {
+				s.logger.Error("Failed to handle request", zap.Error(err))
+				return nil, status.Error(codes.Internal, "failed to handle request")
+			}
+			return resp, nil
+		}
+
+		ctx = context.WithValue(ctx, UserIDKey, userID)
+		s.logger.Debug("User authenticated", zap.String("user_id", string(userID)))
+
+		return handler(ctx, req)
 	}
 }
 
 // ShortenURL - соответствует POST /api/shorten
 func (s *ShortenerServer) ShortenURL(ctx context.Context, req *pb.URLShortenRequest) (*pb.URLShortenResponse, error) {
 	s.logger.Debug("ShortenURL gRPC called",
-		zap.String("url", req.Url),
+		zap.String("url", req.GetUrl()),
 	)
 
 	// Получаем userID из metadata
@@ -60,7 +157,7 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, req *pb.URLShortenRequ
 
 	// Используем существующий сервис
 	shortURL, err := s.service.Shorten(ctx, model.CreateShortURLInput{
-		OriginalURL: req.Url,
+		OriginalURL: req.GetUrl(),
 		UserID:      userID,
 	})
 	if err != nil {
@@ -69,7 +166,7 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, req *pb.URLShortenRequ
 	}
 
 	s.logger.Debug("ShortenURL gRPC success",
-		zap.String("original", req.Url),
+		zap.String("original", req.GetUrl()),
 		zap.String("short", shortURL),
 		zap.String("user_id", userID),
 	)
@@ -78,16 +175,16 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, req *pb.URLShortenRequ
 	go s.subscriber.Subscribe(&model.AuditEntry{
 		Action: "shorten",
 		UserID: userID,
-		URL:    req.Url,
+		URL:    req.GetUrl(),
 	})
 
-	return &pb.URLShortenResponse{Result: shortURL}, nil
+	return pb.URLShortenResponse_builder{Result: shortURL}.Build(), nil
 }
 
 // ExpandURL - соответствует GET /<id>
 func (s *ShortenerServer) ExpandURL(ctx context.Context, req *pb.URLExpandRequest) (*pb.URLExpandResponse, error) {
 	s.logger.Debug("ExpandURL gRPC called",
-		zap.String("id", req.Id),
+		zap.String("id", req.GetId()),
 	)
 
 	// Получаем userID из metadata
@@ -100,22 +197,23 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, req *pb.URLExpandReques
 	// Используем существующий сервис
 	originalURL, err := s.service.Unshorten(ctx, model.GetShortURLInput{
 		UserID: userID,
-		UUID:   req.Id,
+		UUID:   req.GetId(),
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, "URL not found")
 		}
 		// Проверяем на ошибку удаления
-		if strings.Contains(err.Error(), "deleted") {
+		if errors.Is(err, postgres.ErrURLDeleted) {
 			return nil, status.Error(codes.NotFound, "URL has been deleted")
 		}
+
 		s.logger.Error("Failed to expand URL", zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "failed to expand URL: %v", err)
 	}
 
 	s.logger.Debug("ExpandURL gRPC success",
-		zap.String("id", req.Id),
+		zap.String("id", req.GetId()),
 		zap.String("original", originalURL),
 		zap.String("user_id", userID),
 	)
@@ -127,10 +225,10 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, req *pb.URLExpandReques
 		URL:    originalURL,
 	})
 
-	return &pb.URLExpandResponse{Result: originalURL}, nil
+	return pb.URLExpandResponse_builder{Result: originalURL}.Build(), nil
 }
 
-func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *emptypb.Empty) (*pb.UserURLsResponse, error) {
+func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *pb.ListUserURLsRequest) (*pb.UserURLsResponse, error) {
 	s.logger.Debug("ListUserURLs gRPC called")
 
 	userID, err := s.getUserIDFromMetadata(ctx)
@@ -147,10 +245,10 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *emptypb.Empty) (*
 
 	pbUrls := make([]*pb.URLData, 0, len(urls))
 	for _, url := range urls {
-		pbUrls = append(pbUrls, &pb.URLData{
+		pbUrls = append(pbUrls, pb.URLData_builder{
 			ShortUrl:    url.ShortURL,
 			OriginalUrl: url.OriginalURL,
-		})
+		}.Build())
 	}
 
 	s.logger.Debug("ListUserURLs gRPC success",
@@ -158,7 +256,7 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, _ *emptypb.Empty) (*
 		zap.Int("count", len(pbUrls)),
 	)
 
-	return &pb.UserURLsResponse{Urls: pbUrls}, nil
+	return pb.UserURLsResponse_builder{Urls: pbUrls}.Build(), nil
 }
 
 func (s *ShortenerServer) getUserIDFromMetadata(ctx context.Context) (string, error) {
@@ -186,13 +284,58 @@ func (s *ShortenerServer) getUserIDFromMetadata(ctx context.Context) (string, er
 	return userID, nil
 }
 
+func (s *ShortenerServer) setupTLS() (grpc.ServerOption, error) {
+	if !s.config.WebConfig.EnableHTTPS {
+		return nil, nil
+	}
+
+	if _, err := os.Stat(s.config.WebConfig.CertFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("certificate file not found: %s", s.config.WebConfig.CertFile)
+	}
+	if _, err := os.Stat(s.config.WebConfig.KeyFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("private key file not found: %s", s.config.WebConfig.KeyFile)
+	}
+
+	cert, err := tls.LoadX509KeyPair(s.config.WebConfig.CertFile, s.config.WebConfig.KeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS certificate: %w", err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+		CurvePreferences: []tls.CurveID{
+			tls.X25519,
+			tls.CurveP256,
+			tls.CurveP384,
+		},
+	}
+
+	creds := credentials.NewTLS(tlsConfig)
+
+	return grpc.Creds(creds), nil
+}
+
 func (s *ShortenerServer) Run(addr string) error {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	s.grpcServer = grpc.NewServer()
+	tlsOpts, err := s.setupTLS()
+	if err != nil {
+		return fmt.Errorf("failed to setup TLS: %w", err)
+	}
+
+	s.grpcServer = grpc.NewServer(tlsOpts, grpc.ChainUnaryInterceptor(s.AuthInterceptor()))
 
 	pb.RegisterShortenerServiceServer(s.grpcServer, s)
 

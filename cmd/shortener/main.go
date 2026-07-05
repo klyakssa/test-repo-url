@@ -60,7 +60,7 @@ func main() {
 		userService,
 		audit,
 		log,
-		config.GRPCConfig.GRPCPort,
+		config,
 	)
 
 	r = initRoutes(log, userService, config, r, audit)
@@ -123,7 +123,9 @@ func initRoutes(log *logger.MyLogger, userService *uuidservice.UUIDService, conf
 	v2.GET("/urls", h.GetUrlsHandler())
 	v2.DELETE("/urls", h.DeleteUrlsHandler())
 	v3 := r.Group("/api/internal")
-	v3.Middleware(h.TrustedSubnetMiddleware())
+	if config.WebConfig.TrustedSubnet.String() != "" {
+		v3.Middleware(h.TrustedSubnetMiddleware())
+	}
 	v3.GET("/stats", h.StatsHandler())
 
 	return r

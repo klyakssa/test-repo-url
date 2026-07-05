@@ -490,7 +490,7 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 // TrustedSubnetMiddleware is a middleware for trusted subnet
 func (h *MyHandlerStruct) TrustedSubnetMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if h.cfg.WebConfig.TrustedSubnet == "" {
+		if h.cfg.WebConfig.TrustedSubnet.String() == "" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "Forbidden: trusted subnet not configured",
 			})
@@ -505,14 +505,6 @@ func (h *MyHandlerStruct) TrustedSubnetMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		_, subnet, err := net.ParseCIDR(h.cfg.WebConfig.TrustedSubnet)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Internal server error: invalid trusted subnet",
-			})
-			return
-		}
-
 		clientIP := net.ParseIP(realIP)
 		if clientIP == nil {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -521,7 +513,7 @@ func (h *MyHandlerStruct) TrustedSubnetMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if !subnet.Contains(clientIP) {
+		if !h.cfg.WebConfig.TrustedSubnet.Contains(clientIP) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "Forbidden: IP not in trusted subnet",
 			})

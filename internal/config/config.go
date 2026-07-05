@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/caarlos0/env/v6"
@@ -14,13 +15,13 @@ type FileStorage struct {
 }
 
 type WebConfig struct {
-	HostPort      string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseURL       string `env:"BASE_URL" envDefault:""`
-	Secret        string `env:"SECRET" envDefault:""`
-	EnableHTTPS   bool   `env:"ENABLE_HTTPS"`
-	CertFile      string `env:"CERT_FILE" envDefault:"server.crt"`
-	KeyFile       string `env:"KEY_FILE" envDefault:"server.key"`
-	TrustedSubnet string `env:"TRUSTED_SUBNET" envDefault:""`
+	HostPort      string     `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL       string     `env:"BASE_URL" envDefault:""`
+	Secret        string     `env:"SECRET" envDefault:""`
+	EnableHTTPS   bool       `env:"ENABLE_HTTPS"`
+	CertFile      string     `env:"CERT_FILE" envDefault:"server.crt"`
+	KeyFile       string     `env:"KEY_FILE" envDefault:"server.key"`
+	TrustedSubnet *net.IPNet `env:"TRUSTED_SUBNET" envDefault:""`
 }
 
 type DBConfig struct {
@@ -127,13 +128,18 @@ func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
 		cfg.WebConfig.EnableHTTPS = jsonCfg.EnableHTTPS
 	}
 
-	if jsonCfg.TrustedSubnet != "" && cfg.WebConfig.TrustedSubnet == "" {
-		cfg.WebConfig.TrustedSubnet = jsonCfg.TrustedSubnet
+	if jsonCfg.TrustedSubnet != "" && cfg.WebConfig.TrustedSubnet.String() == "" {
+		_, subnet, err := net.ParseCIDR(jsonCfg.TrustedSubnet)
+		if err != nil {
+			panic(err)
+		}
+		cfg.WebConfig.TrustedSubnet = subnet
 	}
 
 	if jsonCfg.GRPCPort != "" && cfg.GRPCConfig.GRPCPort == "" {
 		cfg.GRPCConfig.GRPCPort = jsonCfg.GRPCPort
 	}
+
 }
 
 func InitFlagConfig() *Config {
@@ -197,8 +203,12 @@ func InitFlagConfig() *Config {
 		cfg.WebConfig.EnableHTTPS = *flagEnableHTTPS
 	}
 
-	if cfg.WebConfig.TrustedSubnet == "" {
-		cfg.WebConfig.TrustedSubnet = *flagTrustedSubnet
+	if cfg.WebConfig.TrustedSubnet.String() == "" {
+		_, subnet, err := net.ParseCIDR(*flagTrustedSubnet)
+		if err != nil {
+			panic(err)
+		}
+		cfg.WebConfig.TrustedSubnet = subnet
 	}
 
 	if cfg.GRPCConfig.GRPCPort == "" {

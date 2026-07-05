@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,6 +38,8 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	testConfig = config.InitFlagConfig()
+	_, subnet, _ := net.ParseCIDR("192.168.1.0/24")
+	testConfig.WebConfig.TrustedSubnet = subnet
 }
 
 func TestMainHandler(t *testing.T) {
@@ -260,7 +263,7 @@ func (m *mockService) Close() error {
 }
 
 func (m *mockService) GetStats(ctx context.Context) (model.GetStats, error) {
-	return model.GetStats{}, nil
+	return model.GetStats{Urls: int64(len(m.urls)), Users: 1}, nil
 }
 
 // setupTestHandler создает handler для тестирования
@@ -269,11 +272,14 @@ func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
 		SugaredLogger: zap.NewNop().Sugar(),
 	}
 
+	_, subnet, _ := net.ParseCIDR("192.168.1.0/24")
+
 	cfg := &config.Config{
 		WebConfig: config.WebConfig{
-			HostPort: "localhost:8080",
-			BaseURL:  "http://localhost:8080",
-			Secret:   "test-secret-key",
+			HostPort:      "localhost:8080",
+			BaseURL:       "http://localhost:8080",
+			Secret:        "test-secret-key",
+			TrustedSubnet: subnet,
 		},
 	}
 
@@ -467,4 +473,72 @@ func ExampleMyHandlerStruct_DeleteUrlsHandler() {
 
 	// Output:
 	// Status: 202
+}
+
+func ExampleMyHandlerStruct_TrustedSubnetMiddleware_invalidIPNotInSubnet() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, _ := setupTestHandler()
+
+	r.GET("/api/internal", h.TrustedSubnetMiddleware(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/internal", nil)
+	req.Header.Set("X-Real-IP", "10.0.0.1")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 403
+}
+
+func ExampleMyHandlerStruct_TrustedSubnetMiddleware_success() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, _ := setupTestHandler()
+
+	r.GET("/api/internal", h.TrustedSubnetMiddleware(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/internal", nil)
+	req.Header.Set("X-Real-IP", "192.168.1.100")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
+}
+
+func ExampleMyHandlerStruct_StatsHandler_success() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/url1",
+		UserID:      "test-user",
+	})
+
+	r.GET("/stats", h.StatsHandler())
+
+	req := httptest.NewRequest(http.MethodGet, "/stats", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
 }
