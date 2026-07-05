@@ -25,9 +25,16 @@ type MyRouter struct {
 }
 
 func NewMyRouter(cfg *config.Config) *MyRouter {
+	engine := gin.Default()
 	return &MyRouter{
-		Engine: gin.Default(),
+		Engine: engine,
 		Config: cfg,
+		server: &http.Server{
+			Addr:         cfg.WebConfig.HostPort,
+			Handler:      engine,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+		},
 	}
 }
 
@@ -39,12 +46,12 @@ func (r *MyRouter) Run(ctx context.Context, webConfig *config.WebConfig) error {
 			if err := generateTLSCertificates(webConfig.CertFile, webConfig.KeyFile); err != nil {
 				errChan <- err
 			}
-			if err := r.Engine.RunTLS(webConfig.HostPort, webConfig.CertFile, webConfig.KeyFile); err != nil {
+			if err := r.server.ListenAndServeTLS(webConfig.CertFile, webConfig.KeyFile); err != nil {
 				errChan <- err
 			}
 			return
 		}
-		if err := r.Engine.Run(webConfig.HostPort); err != nil {
+		if err := r.server.ListenAndServe(); err != nil {
 			errChan <- err
 		}
 	}()

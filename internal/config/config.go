@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/caarlos0/env/v6"
@@ -14,12 +15,13 @@ type FileStorage struct {
 }
 
 type WebConfig struct {
-	HostPort    string `env:"SERVER_ADDRESS" envDefault:""`
-	BaseURL     string `env:"BASE_URL" envDefault:""`
-	Secret      string `env:"SECRET" envDefault:""`
-	EnableHTTPS bool   `env:"ENABLE_HTTPS"`
-	CertFile    string `env:"CERT_FILE" envDefault:"server.crt"`
-	KeyFile     string `env:"KEY_FILE" envDefault:"server.key"`
+	HostPort      string     `env:"SERVER_ADDRESS" envDefault:""`
+	BaseURL       string     `env:"BASE_URL" envDefault:""`
+	Secret        string     `env:"SECRET" envDefault:""`
+	EnableHTTPS   bool       `env:"ENABLE_HTTPS"`
+	CertFile      string     `env:"CERT_FILE" envDefault:"server.crt"`
+	KeyFile       string     `env:"KEY_FILE" envDefault:"server.key"`
+	TrustedSubnet *net.IPNet `env:"TRUSTED_SUBNET" envDefault:""`
 }
 
 type DBConfig struct {
@@ -31,12 +33,17 @@ type AuditConfig struct {
 	AuditURL  string `env:"AUDIT_URL" envDefault:""`
 }
 
+type GRPCConfig struct {
+	GRPCPort string `env:"GRPC_PORT"`
+}
+
 type Config struct {
-	WebConfig WebConfig
-	File      FileStorage
-	Audit     AuditConfig
-	PostDB    DBConfig
-	PathFile  string
+	WebConfig  WebConfig
+	File       FileStorage
+	Audit      AuditConfig
+	PostDB     DBConfig
+	PathFile   string
+	GRPCConfig GRPCConfig
 }
 
 type JSONConfig struct {
@@ -48,6 +55,8 @@ type JSONConfig struct {
 	Secret          string `json:"secret"`
 	AuditFile       string `json:"audit_file"`
 	AuditURL        string `json:"audit_url"`
+	TrustedSubnet   string `json:"trusted_subnet"`
+	GRPCPort        string `json:"grpc_port"`
 }
 
 func getConfigFilePath() (configFlag string) {
@@ -118,6 +127,19 @@ func applyJSONConfig(cfg *Config, jsonCfg *JSONConfig) {
 	if !cfg.WebConfig.EnableHTTPS && jsonCfg.EnableHTTPS {
 		cfg.WebConfig.EnableHTTPS = jsonCfg.EnableHTTPS
 	}
+
+	if jsonCfg.TrustedSubnet != "" && cfg.WebConfig.TrustedSubnet.String() == "" {
+		_, subnet, err := net.ParseCIDR(jsonCfg.TrustedSubnet)
+		if err != nil {
+			panic(err)
+		}
+		cfg.WebConfig.TrustedSubnet = subnet
+	}
+
+	if jsonCfg.GRPCPort != "" && cfg.GRPCConfig.GRPCPort == "" {
+		cfg.GRPCConfig.GRPCPort = jsonCfg.GRPCPort
+	}
+
 }
 
 func InitFlagConfig() *Config {
@@ -134,6 +156,7 @@ func InitFlagConfig() *Config {
 	env.Parse(&cfg.File)
 	env.Parse(&cfg.PostDB)
 	env.Parse(&cfg.Audit)
+	env.Parse(&cfg.GRPCConfig)
 
 	flagHostPort := pflag.StringP("server", "a", "localhost:8080", "server host")
 	flagBaseURL := pflag.StringP("base", "b", "http://localhost:8080", "base url")
@@ -143,6 +166,8 @@ func InitFlagConfig() *Config {
 	flagAuditFile := pflag.StringP("audit-file", "l", "", "audit log file path")
 	flagAuditURL := pflag.StringP("audit-url", "u", "", "audit log server url")
 	flagEnableHTTPS := pflag.BoolP("enable-https", "s", false, "enable https")
+	flagTrustedSubnet := pflag.StringP("trusted-subnet", "t", "", "trusted subnet")
+	flagGRPCPort := pflag.StringP("grpc-port", "g", "localhost:8081", "grpc port")
 
 	pflag.Parse()
 
@@ -176,6 +201,18 @@ func InitFlagConfig() *Config {
 
 	if !cfg.WebConfig.EnableHTTPS {
 		cfg.WebConfig.EnableHTTPS = *flagEnableHTTPS
+	}
+
+	if cfg.WebConfig.TrustedSubnet.String() == "" {
+		_, subnet, err := net.ParseCIDR(*flagTrustedSubnet)
+		if err != nil {
+			panic(err)
+		}
+		cfg.WebConfig.TrustedSubnet = subnet
+	}
+
+	if cfg.GRPCConfig.GRPCPort == "" {
+		cfg.GRPCConfig.GRPCPort = *flagGRPCPort
 	}
 
 	return &cfg

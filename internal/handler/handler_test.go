@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/model"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
+	"github.com/klyakssa/test-repo-url/pkg/audit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -36,6 +38,8 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	testConfig = config.InitFlagConfig()
+	_, subnet, _ := net.ParseCIDR("192.168.1.0/24")
+	testConfig.WebConfig.TrustedSubnet = subnet
 }
 
 func TestMainHandler(t *testing.T) {
@@ -73,7 +77,9 @@ func TestMainHandler(t *testing.T) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.New(log, userService, testConfig)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+
+	hand := handler.New(log, userService, testConfig, audit)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.want.url))
@@ -139,8 +145,9 @@ func TestNewShortenHandler(t *testing.T) {
 
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
 
-	hand := handler.New(log, userService, testConfig)
+	hand := handler.New(log, userService, testConfig, audit)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := json.Marshal(model.ShortenRequest{URL: tt.want.url})
@@ -188,7 +195,9 @@ func BenchmarkMainHandler(b *testing.B) {
 	ctx := context.Background()
 	userService := uuidservice.New(ctx, uuidstorage.New(testConfig), log)
 
-	hand := handler.New(log, userService, testConfig)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+
+	hand := handler.New(log, userService, testConfig, audit)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -253,22 +262,30 @@ func (m *mockService) Close() error {
 	return nil
 }
 
+func (m *mockService) GetStats(ctx context.Context) (model.GetStats, error) {
+	return model.GetStats{Urls: int64(len(m.urls)), Users: 1}, nil
+}
+
 // setupTestHandler создает handler для тестирования
 func setupTestHandler() (*handler.MyHandlerStruct, *mockService) {
 	log := &logger.MyLogger{
 		SugaredLogger: zap.NewNop().Sugar(),
 	}
 
+	_, subnet, _ := net.ParseCIDR("192.168.1.0/24")
+
 	cfg := &config.Config{
 		WebConfig: config.WebConfig{
-			HostPort: "localhost:8080",
-			BaseURL:  "http://localhost:8080",
-			Secret:   "test-secret-key",
+			HostPort:      "localhost:8080",
+			BaseURL:       "http://localhost:8080",
+			Secret:        "test-secret-key",
+			TrustedSubnet: subnet,
 		},
 	}
 
 	mockSvc := newMockService()
-	h := handler.New(log, mockSvc, cfg)
+	audit := audit.NewAudit(testConfig.Audit.AuditFile, testConfig.Audit.AuditURL)
+	h := handler.New(log, mockSvc, cfg, audit)
 
 	return h, mockSvc
 }
@@ -456,4 +473,72 @@ func ExampleMyHandlerStruct_DeleteUrlsHandler() {
 
 	// Output:
 	// Status: 202
+}
+
+func ExampleMyHandlerStruct_TrustedSubnetMiddleware_invalidIPNotInSubnet() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, _ := setupTestHandler()
+
+	r.GET("/api/internal", h.TrustedSubnetMiddleware(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/internal", nil)
+	req.Header.Set("X-Real-IP", "10.0.0.1")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 403
+}
+
+func ExampleMyHandlerStruct_TrustedSubnetMiddleware_success() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, _ := setupTestHandler()
+
+	r.GET("/api/internal", h.TrustedSubnetMiddleware(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/internal", nil)
+	req.Header.Set("X-Real-IP", "192.168.1.100")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
+}
+
+func ExampleMyHandlerStruct_StatsHandler_success() {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	h, mockSvc := setupTestHandler()
+
+	mockSvc.Shorten(context.Background(), model.CreateShortURLInput{
+		OriginalURL: "https://example.com/url1",
+		UserID:      "test-user",
+	})
+
+	r.GET("/stats", h.StatsHandler())
+
+	req := httptest.NewRequest(http.MethodGet, "/stats", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	fmt.Printf("Status: %d\n", w.Code)
+
+	// Output:
+	// Status: 200
 }

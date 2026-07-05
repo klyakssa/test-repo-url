@@ -16,6 +16,7 @@ import (
 	"github.com/klyakssa/test-repo-url/internal/router"
 	"github.com/klyakssa/test-repo-url/internal/service/uuidservice"
 	"github.com/klyakssa/test-repo-url/internal/uuidstorage"
+	"github.com/klyakssa/test-repo-url/pkg/audit"
 )
 
 var (
@@ -53,10 +54,25 @@ func main() {
 		userService = uuidservice.New(ctx, db, log)
 	}
 
-	r = initRoutes(log, userService, config, r)
+	audit := audit.NewAudit(config.Audit.AuditFile, config.Audit.AuditURL)
+
+	grpcServer := handler.NewShortenerServer(
+		userService,
+		audit,
+		log,
+		config,
+	)
+
+	r = initRoutes(log, userService, config, r, audit)
 
 	go func() {
 		if err := r.Run(ctx, &config.WebConfig); err != nil {
+			errChan <- err
+		}
+	}()
+
+	go func() {
+		if err := grpcServer.Run(config.GRPCConfig.GRPCPort); err != nil {
 			errChan <- err
 		}
 	}()
@@ -80,7 +96,7 @@ func main() {
 		log.Error("Application terminated with error: %v", err)
 		cancel()
 	case <-ctx.Done():
-
+		grpcServer.Close()
 		if err := userService.Close(); err != nil {
 			log.Error(err)
 		} else {
@@ -90,8 +106,8 @@ func main() {
 	}
 }
 
-func initRoutes(log *logger.MyLogger, userService *uuidservice.UUIDService, config *config.Config, r *router.MyRouter) *router.MyRouter {
-	h := handler.New(log, userService, config)
+func initRoutes(log *logger.MyLogger, userService *uuidservice.UUIDService, config *config.Config, r *router.MyRouter, audit *audit.Audit) *router.MyRouter {
+	h := handler.New(log, userService, config, audit)
 	r.Middleware(h.WithLogging())
 	r.Middleware(h.SecretMiddleware())
 	r.Middleware(h.GzipMiddleware())
@@ -106,6 +122,11 @@ func initRoutes(log *logger.MyLogger, userService *uuidservice.UUIDService, conf
 	v2 := r.Group("/api/user")
 	v2.GET("/urls", h.GetUrlsHandler())
 	v2.DELETE("/urls", h.DeleteUrlsHandler())
+	v3 := r.Group("/api/internal")
+	if config.WebConfig.TrustedSubnet.String() != "" {
+		v3.Middleware(h.TrustedSubnetMiddleware())
+	}
+	v3.GET("/stats", h.StatsHandler())
 
 	return r
 }

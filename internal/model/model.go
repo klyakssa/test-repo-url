@@ -89,3 +89,9 @@ type AuditEntry struct {
 	UserID    string `json:"user_id,omitempty"`
 	URL       string `json:"url"`
 }
+
+// GetStats is response for get stats
+type GetStats struct {
+	Urls  int64 `json:"urls"`
+	Users int64 `json:"users"`
+}

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,12 +41,12 @@ type MyHandlerStruct struct {
 }
 
 // New is a constructor
-func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config) *MyHandlerStruct {
+func New(l *logger.MyLogger, uuid repository.UserService, cfg *config.Config, subscriber *audit.Audit) *MyHandlerStruct {
 	return &MyHandlerStruct{
 		Logger:     l,
 		service:    uuid,
 		cfg:        cfg,
-		subscriber: audit.NewAudit(cfg.Audit.AuditFile, cfg.Audit.AuditURL),
+		subscriber: subscriber,
 	}
 }
 
@@ -483,5 +484,58 @@ func (h *MyHandlerStruct) DeleteUrlsHandler() gin.HandlerFunc {
 
 		h.service.DeleteUrlsByUserID(c.Request.Context(), userID, uuids)
 		c.Writer.WriteHeader(http.StatusAccepted)
+	}
+}
+
+// TrustedSubnetMiddleware is a middleware for trusted subnet
+func (h *MyHandlerStruct) TrustedSubnetMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if h.cfg.WebConfig.TrustedSubnet.String() == "" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Forbidden: trusted subnet not configured",
+			})
+			return
+		}
+
+		realIP := c.GetHeader("X-Real-IP")
+		if realIP == "" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Forbidden: X-Real-IP header required",
+			})
+			return
+		}
+
+		clientIP := net.ParseIP(realIP)
+		if clientIP == nil {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Forbidden: invalid IP address",
+			})
+			return
+		}
+
+		if !h.cfg.WebConfig.TrustedSubnet.Contains(clientIP) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Forbidden: IP not in trusted subnet",
+			})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// StatsHandler is a handler for get stats
+// Response: application/json
+func (h *MyHandlerStruct) StatsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.Logger.Debug("StatsHandler",
+			zap.Any("headers", c.Request.Header))
+		stats, err := h.service.GetStats(c.Request.Context())
+		if err != nil {
+			h.Logger.Error(err)
+			http.Error(c.Writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		c.JSON(http.StatusOK, stats)
 	}
 }

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "github.com/klyakssa/test-repo-url/internal/proto";
+
+
+service ShortenerService {
+  rpc ShortenURL (URLShortenRequest) returns (URLShortenResponse);
+  rpc ExpandURL (URLExpandRequest) returns (URLExpandResponse);
+  rpc ListUserURLs (ListUserURLsRequest) returns (UserURLsResponse);
+}
+
+message URLShortenRequest {
+  string url = 1;
+}
+
+message ListUserURLsRequest {}
+
+message URLShortenResponse {
+  string result = 1;
+}
+
+message URLExpandRequest {
+  string id = 1;
+}
+
+message URLExpandResponse {
+  string result = 1;
+}
+
+message UserURLsResponse {
+  repeated URLData urls = 1;
+}
+
+message URLData {
+  string short_url = 1;
+  string original_url = 2;
+}

@@ -118,3 +118,7 @@ func (s *UUIDStorage) Close() error {
 func (s *UUIDStorage) PingContext(ctx context.Context) error {
 	return postgres.ErrConnection
 }
+
+func (s *UUIDStorage) GetStats(ctx context.Context) (model.GetStats, error) {
+	return model.GetStats{}, nil
+}
